@@ -312,7 +312,7 @@ st.markdown("""
 # ============================================================
 # RUTA DE ARCHIVOS DE CONFIG
 # ============================================================
-CONFIG_FILE = "app_seguimiento/config.yaml"
+CONFIG_FILE = "config.yaml"
 DB_FILE = "log4.db"
 
 # ============================================================
@@ -952,7 +952,7 @@ else:
 from PIL import Image
 
 # Cargar la imagen
-logo = Image.open("app_seguimiento/IDT_logo.png")
+logo = Image.open("IDT_logo.png")
 
 # Centrar la imagen usando columnas
 col1, col2, col3 = st.columns([1, 2, 1])
