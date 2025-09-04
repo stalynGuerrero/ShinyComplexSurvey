@@ -313,7 +313,7 @@ st.markdown("""
 # RUTA DE ARCHIVOS DE CONFIG
 # ============================================================
 CONFIG_FILE = "app_reemplazos/config.yaml"
-DB_FILE = "app_reemplazos/log4.db"
+DB_FILE = "log4.db"
 
 # ============================================================
 # CONFIG_UTILS
