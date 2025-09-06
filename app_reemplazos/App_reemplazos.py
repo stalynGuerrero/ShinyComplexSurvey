@@ -407,8 +407,23 @@ init_sqlite_tables()
 # ============================================================
 def guardar_base(plantilla, marco, var_upm):
     with get_conn() as conn:
-        plantilla_db = pd.DataFrame({"upm": plantilla[var_upm].dropna().astype(str).tolist()})
+        # Guardar la tabla PLANTILLA solo con UPM
+        plantilla_db = pd.DataFrame({
+            "upm": plantilla[var_upm].dropna().astype(str).tolist()
+        })
         plantilla_db.to_sql("plantilla", conn, if_exists="replace", index=False)
+
+        # 👉 Cruce para traer DEPTO desde PLANTILLA a MARCO
+        if "DESTINO" in plantilla.columns and "DESTINO" in marco.columns:
+            marco = marco.merge(
+                plantilla[["DESTINO", "DEPTO"]],
+                on="DESTINO",
+                how="left"
+            )
+
+            marco["DEPTO"] = marco["DEPTO"].fillna("SIN DEPTO")
+
+        # Guardar MARCO ya con DEPTO
         marco.to_sql("marco", conn, if_exists="replace", index=False)
         conn.commit()
 
@@ -806,9 +821,39 @@ if auth_status:
             nombre_completo = col_a.text_input("👤 Nombre completo:", key="nombre_input")
             cedula = col_b.text_input("🪪 Cédula:", key="cedula_input")
 
-            upm_values = sorted(plantilla["upm"].dropna().astype(str).unique().tolist())
-            upm_sel_display = st.selectbox("Seleccione el UPM:", ["— Seleccione —"] + upm_values, key="upm_sel")
+            # Crear la columna UPM en MARCO
+            marco["UPM"] = (
+                marco["FECHA_DESPACHO"].astype(str) + "_" +
+                marco["HORA_DESPACHO"].astype(str) + "_" +
+                marco["MUNICIPIO_DESTINO_RUTA"].astype(str)
+            )
+
+            # Obtener valores únicos y ordenados de UPM
+            upm_values = sorted(marco["UPM"].dropna().astype(str).unique().tolist())
+
+            # Selectbox con opción inicial
+            upm_sel_display = st.selectbox(
+                "Seleccione el UPM:",
+                ["— Seleccione —"] + upm_values,
+                key="upm_sel"
+            )
+
+            # Variable final con la UPM seleccionada o None
             upm_sel = None if upm_sel_display == "— Seleccione —" else upm_sel_display
+
+            if upm_sel and not marco.empty:
+                info_upm = marco.loc[marco["UPM"] == upm_sel, ["PLANILLA","DEPTO","DESTINO", "HORA_DESPACHO"]]
+
+                # 🔹 Eliminar duplicados
+                info_upm = info_upm.drop_duplicates()
+
+                if not info_upm.empty:
+                    st.markdown("#### 📋 Información del UPM seleccionado")
+                    st.table(info_upm.reset_index(drop=True))
+                else:
+                    st.warning("⚠️ No se encontró información adicional para este UPM.")
+
+
 
             # Generar nuevas opciones si cambia la UPM
             if upm_sel and (st.session_state.get("last_upm") != upm_sel):
@@ -840,7 +885,27 @@ if auth_status:
             opciones = st.session_state.get("opciones_reemplazo", [])
             
             if opciones:
+                st.markdown("### 🔁 Opciones de reemplazo sugeridas")
+
+            # Construir DataFrame con info de reemplazos
+            reemplazo_info = []
+            for opc in opciones:
+                fila = marco.loc[marco["UPM"] == opc, ["UPM", "PLANILLA", "DEPTO", "DESTINO", "HORA_DESPACHO"]]
+                if not fila.empty:
+                    reemplazo_info.append(fila.iloc[0])
+
+            if reemplazo_info:
+                df_reemplazos = pd.DataFrame(reemplazo_info).drop_duplicates()
+                
+                # Mostrar tabla
+                st.table(df_reemplazos.reset_index(drop=True)[["PLANILLA", "DEPTO", "DESTINO", "HORA_DESPACHO"]])
+                
                 reemplazo_sel = st.radio("Seleccione reemplazo:", opciones, key="reemplazo_radio")
+                
+                
+                
+                
+                
                 de_acuerdo = st.radio("¿Está de acuerdo?", ["Sí", "No"], key="acuerdo_radio", horizontal=True)
                 
                 por_que_no, motivo = "", ""
@@ -877,10 +942,12 @@ if auth_status:
                 
                 else:  # Si el usuario está de acuerdo
                     motivos = [
-                        "La ruta no salió programada",
-                        "Inconvenientes en la vía",
-                        "Fallas técnicas en el bus",
-                        "Reajuste operativo",
+                        "1. Situaciones de orden público",
+                        "2. Problemas en la vía (bloqueos, derrumbes, inundaciones, etc)",
+                        "3. La ruta no salió en la hora programada",
+                        "4. Fallas técnicas",
+                        "5. Cupo imcompleto",
+                        "6. Sin salida en la hora asignada",
                         "Otro"
                     ]
                     motivo_sel = st.selectbox("Motivo del cambio:", motivos, key="motivo_sel")
