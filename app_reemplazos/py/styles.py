@@ -67,3 +67,4 @@ def render_sidebar_logo():
         """,
         unsafe_allow_html=True
     )
+

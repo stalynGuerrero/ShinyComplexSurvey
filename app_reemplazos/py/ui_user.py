@@ -230,3 +230,4 @@ def registrar_cambio(nombre_completo, upm_original, upm_reemplazo, motivo, proba
     
     conn.commit()
     conn.close()
+    
