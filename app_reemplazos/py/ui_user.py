@@ -27,13 +27,24 @@ def show_user_panel(username, authenticator):
     st.info(f"Bienvenido {username}, aquí puedes reportar reemplazos.")
 
     # === Cargar tablas desde la BD ===
-    muestra, marco, reemplazos = load_tables_from_db()
+    muestra, marco, reemplazos, plantilla = load_tables_from_db()
     if muestra.empty and marco.empty:
         st.error("⚠ No se encontraron tablas cargadas. Contacte al administrador.")
         return
 
     # === Interfaz de búsqueda ===
-    planilla_input = st.text_input("Ingrese la PLANILLA a reemplazar")
+    st.info("""
+    Como usuario, usted debe completar este formulario para solicitar el cambio de su UPM (Unidad Primaria de Muestreo) actual por una nueva disponible.  
+    El objetivo es gestionar de manera eficiente los reemplazos cuando su ruta asignada no esté programada o presente algún inconveniente, 
+    asegurando así la continuidad del servicio en la Terminal de Transportes.
+    """)
+
+    # Campos en paralelo: Nombre completo y Planilla
+    col1, col2 = st.columns([2, 2])
+    with col1:
+        nombre_completo = st.text_input("👤 Ingrese su nombre completo", value=username)
+    with col2:
+        planilla_input = st.text_input("📄 Ingrese la PLANILLA a reemplazar")
 
     if st.button("🔎 Buscar reemplazos"):
         if not planilla_input.strip():
@@ -41,7 +52,12 @@ def show_user_panel(username, authenticator):
         else:
             st.session_state.reemplazos_descartados = []
             st.session_state.resultado_busqueda = buscar_y_sugerir_reemplazo(
-                planilla_input, muestra, marco, reemplazos, st.session_state.reemplazos_descartados
+                planilla_input,
+                muestra,
+                marco,
+                reemplazos,
+                plantilla,
+                st.session_state.reemplazos_descartados
             )
 
     # === Mostrar resultado y opciones ===
@@ -73,12 +89,13 @@ def show_user_panel(username, authenticator):
             
             # Formulario para confirmar
             motivos = [
-                "1. Sin cobertura celular o wifi",
-                "2. No se encuentra el predio",
-                "3. No se encuentra el informante",
-                "4. Rechazo del informante",
-                "5. UPM fuera de la muestra"
-            ]
+                        "1. Situaciones de orden público",
+                        "2. Problemas en la vía (bloqueos, derrumbes, inundaciones, etc)",
+                        "3. La ruta no salió en la hora programada",
+                        "4. Fallas técnicas",
+                        "5. Cupo imcompleto",
+                        "6. Sin salida en la hora asignada",
+                    ]
             motivo_seleccionado = st.selectbox("Seleccione el motivo del reemplazo:", [""] + motivos + ["Otros"])
             
             motivo_personalizado = ""
@@ -114,7 +131,7 @@ def show_user_panel(username, authenticator):
 def load_tables_from_db():
     """Carga las tablas desde sqlite."""
     conn = get_conn()
-    muestra = marco = reemplazos = pd.DataFrame()
+    muestra = marco = reemplazos = plantilla = pd.DataFrame()
     try:
         muestra = pd.read_sql("SELECT * FROM muestra", conn)
         muestra.columns = muestra.columns.str.upper()
@@ -130,15 +147,53 @@ def load_tables_from_db():
         reemplazos.columns = reemplazos.columns.str.upper()
     except Exception as e:
         st.error(f"Error al cargar la tabla 'reemplazo': {e}")
-    return muestra, marco, reemplazos
+    try:
+        plantilla = pd.read_sql("SELECT * FROM plantilla", conn)
+        plantilla.columns = plantilla.columns.str.upper()
+    except Exception as e:
+        st.error(f"Error al cargar la tabla 'plantilla': {e}")
+    return muestra, marco, reemplazos, plantilla
 
-def buscar_y_sugerir_reemplazo(planilla, muestra, marco, reemplazos, descartados):
+
+def generar_upm(fila):
+    """Genera la UPM concatenando FECHA_DESPACHO + HORA_DESPACHO + MUNICIPIO_DESTINO_RUTA."""
+    return f"{fila.get('FECHA_DESPACHO','')}{fila.get('HORA_DESPACHO','')}{fila.get('MUNICIPIO_DESTINO_RUTA','')}"
+
+
+def buscar_y_sugerir_reemplazo(planilla, muestra, marco, reemplazos, plantilla, descartados):
     """
     Algoritmo de búsqueda y asignación de reemplazo.
-    Devuelve hasta 3 opciones disponibles con la información correcta de UPM, Municipio y Departamento.
+    Devuelve hasta 3 opciones disponibles con DEPTO cruzado correctamente:
+    1. Primero busca en PLANTILLA por UPM.
+    2. Si no lo encuentra, busca en MUESTRA por DESTINO (marco.DESTINO = muestra.DESTINO).
     """
     planilla = str(planilla).strip()
     candidatos = []
+
+    # --- Asegurar que MARCO tenga columna UPM generada ---
+    if "UPM" not in marco.columns:
+        marco["UPM"] = (
+            marco["FECHA_DESPACHO"].astype(str).str.strip() + "_" +
+            marco["HORA_DESPACHO"].astype(str).str.strip() + "_" +
+            marco["MUNICIPIO_DESTINO_RUTA"].astype(str).str.strip()
+        )
+
+    # === Función auxiliar para buscar DEPTO ===
+    def obtener_depto(upm, destino):
+        depto = None
+        # 1. Buscar en PLANTILLA por UPM
+        if "UPM" in plantilla.columns and not plantilla.empty:
+            fila_plantilla = plantilla[plantilla["UPM"] == str(upm)]
+            if not fila_plantilla.empty and "DEPTO" in fila_plantilla.columns:
+                depto = fila_plantilla.iloc[0]["DEPTO"]
+
+        # 2. Si no se encontró, hacer CRUCE con MUESTRA por DESTINO
+        if (not depto) and "DESTINO" in muestra.columns:
+            fila_muestra = muestra[muestra["DESTINO"] == str(destino)]
+            if not fila_muestra.empty and "DEPTO" in fila_muestra.columns:
+                depto = fila_muestra.iloc[0]["DEPTO"]
+
+        return depto
 
     # --- 1. Reemplazos probabilísticos ---
     if "PLANILLA" in muestra.columns:
@@ -148,26 +203,28 @@ def buscar_y_sugerir_reemplazo(planilla, muestra, marco, reemplazos, descartados
             if "UPM" in reemplazos.columns and "TIPO_REEMPLAZO" in reemplazos.columns:
                 candidatos_reemp = reemplazos[
                     (reemplazos["UPM"] == upm) &
-                    (reemplazos["TIPO_REEMPLAZO"] == "probabilistico") &
+                    (reemplazos["TIPO_REEMPLAZO"].str.lower() == "probabilistico") &
                     (~reemplazos["REEMPLAZO"].isin(descartados))
                 ]
                 if not candidatos_reemp.empty:
                     for _, fila_reemp in candidatos_reemp.iterrows():
-                        # Obtener información completa del reemplazo desde el marco
                         fila_marco_reemp = marco[marco["PLANILLA"] == str(fila_reemp["REEMPLAZO"])]
                         if not fila_marco_reemp.empty:
                             fila_marco_reemp = fila_marco_reemp.iloc[0]
+                            depto = obtener_depto(
+                                fila_marco_reemp.get("UPM"),
+                                fila_marco_reemp.get("DESTINO")   # 🔹 aquí usamos DESTINO de MARCO
+                            )
                             candidatos.append({
                                 "PLANILLA": fila_reemp["REEMPLAZO"],
                                 "UPM": fila_marco_reemp.get("UPM"),
-                                "DEPTO": fila_marco_reemp.get("DESTINO"),  # Departamento
-                                "MUNICIPIO": fila_marco_reemp.get("MUNICIPIO_DESTINO_RUTA"),  # Municipio
+                                "DEPTO": depto,
+                                "MUNICIPIO": fila_marco_reemp.get("DESTINO"),
                                 "probabilistica": True
                             })
-                    # Limitar a máximo 3 candidatos
                     return candidatos[:3]
 
-    # --- 2. Reemplazos desde la tabla marco ---
+    # --- 2. Reemplazos desde MARCO ---
     if "PLANILLA" in marco.columns:
         fila_marco = marco[marco["PLANILLA"] == planilla]
         if not fila_marco.empty:
@@ -175,31 +232,33 @@ def buscar_y_sugerir_reemplazo(planilla, muestra, marco, reemplazos, descartados
             if flag in ("si", "sí", "yes", "true", "1"):
                 st.warning(f"La planilla {planilla} ya ha sido marcada como reemplazo en el marco.")
                 return None
-            
+
             hora = fila_marco.iloc[0].get("HORA_DESPACHO")
-            municipio_destino = fila_marco.iloc[0].get("MUNICIPIO_DESTINO_RUTA")
-            
             candidatos_marco = marco[
                 (marco["HORA_DESPACHO"] == hora) &
-                (marco["MUNICIPIO_DESTINO_RUTA"] == municipio_destino) &
                 (~marco["REEMPLAZO"].astype(str).str.lower().isin(["si", "sí", "yes", "true", "1"])) &
                 (~marco["PLANILLA"].isin(descartados))
             ]
-            
+
             if not candidatos_marco.empty:
                 n_samples = min(3, len(candidatos_marco))
                 candidatos_elegidos = candidatos_marco.sample(n=n_samples, replace=False)
                 for _, fila_rep in candidatos_elegidos.iterrows():
+                    depto = obtener_depto(
+                        fila_rep.get("UPM"),
+                        fila_rep.get("DESTINO")   # 🔹 aquí también usamos DESTINO de MARCO
+                    )
                     candidatos.append({
                         "PLANILLA": fila_rep.get("PLANILLA"),
                         "UPM": fila_rep.get("UPM"),
-                        "DEPTO": fila_rep.get("DESTINO"),  # Departamento
-                        "MUNICIPIO": fila_rep.get("MUNICIPIO_DESTINO_RUTA"),  # Municipio
+                        "DEPTO": depto,
+                        "MUNICIPIO": fila_rep.get("DESTINO"),
                         "probabilistica": False
                     })
                 return candidatos
 
     return None
+
 
 def registrar_cambio(nombre_completo, upm_original, upm_reemplazo, motivo, probabilistica):
     """Registra el cambio en la base de datos para monitoreo."""
@@ -230,4 +289,3 @@ def registrar_cambio(nombre_completo, upm_original, upm_reemplazo, motivo, proba
     
     conn.commit()
     conn.close()
-    
