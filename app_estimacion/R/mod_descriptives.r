@@ -196,7 +196,7 @@ mod_descriptives_server <- function(id, design) {
       by_vars <- head(input$by, 4)
       
       if (t == 'num') {
-        result_table_numeric(dsg, varname = var, by = by_vars)
+        result_table_numeric(dsg, varname = var, by = by_vars) 
       } else {
         result_table_proportion(dsg, varname = var, by = by_vars)
       }

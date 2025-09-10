@@ -115,19 +115,51 @@ format_results_for_display <- function(df) {
   if (is.null(df) || nrow(df) == 0) return(df)
   
   df %>%
+    # Redondeo genérico de numéricos
     mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+    
+    # Formato para coeficientes de variación (cv_)
     mutate(across(matches("^cv_"), ~ case_when(
       is.na(.x) ~ NA_character_,
-      .x < 3 ~ paste0(formatC(round(.x, 2), digits = 2, format = "f"), "%"),
-      .x >= 3 & .x < 5 ~ paste0(formatC(round(.x, 2), digits = 2, format = "f"), "%*"),
-      .x >= 5 & .x < 15 ~ paste0(formatC(round(.x, 2), digits = 2, format = "f"), "%**"),
-      .x >= 15 ~ paste0(formatC(round(.x, 2), digits = 2, format = "f"), "%***"),
+      .x < 3    ~ paste0(formatC(.x, digits = 2, format = "f"), "%"),
+      .x < 5    ~ paste0(formatC(.x, digits = 2, format = "f"), "%*"),
+      .x < 15   ~ paste0(formatC(.x, digits = 2, format = "f"), "%**"),
+      .x >= 15  ~ paste0(formatC(.x, digits = 2, format = "f"), "%***"),
       TRUE ~ NA_character_
     ))) %>%
+    
+    # Formato para márgenes de error (me_)
     mutate(across(matches("^me_"), ~ ifelse(
       is.finite(.x),
-      paste0(formatC(round(.x, 2), digits = 2, format = "f"), "%"),
-      NA
+      paste0(formatC(.x, digits = 2, format = "f"), "%"),
+      NA_character_
     )))
 }
+
+rename_for_latex <- function(df) {
+  df %>%
+    rename_with(~ dplyr::recode(.x,
+                                "prop"      = "$\\hat{p}$",
+                                "prop_se"   = "$\\widehat{se}(p)$",
+                                "prop_low"  = "$IC_{inf}(\\hat{p})$",
+                                "prop_upp"  = "$IC_{sup}(\\hat{p})$",
+                                "cv_prop"   = "$CV(\\hat{p})$",
+                                "me_prop"   = "$ME(\\hat{p})$",
+                                
+                                "media"     = "$\\hat{\\bar{x}}$",
+                                "media_se"  = "$\\widehat{se}(\\bar{x})$",
+                                "media_low" = "$IC_{inf}(\\hat{\\bar{x}})$",
+                                "media_upp" = "$IC_{sup}(\\hat{\\bar{x}})$",
+                                "cv_media"  = "$CV(\\hat{\\bar{x}})$",
+                                "me_media"  = "$ME(\\hat{\\bar{x}})$",
+                                
+                                "total"     = "$\\hat{T}$",
+                                "total_se"  = "$\\widehat{se}(T)$",
+                                "total_low" = "$IC_{inf}(\\hat{T})$",
+                                "total_upp" = "$IC_{sup}(\\hat{T})$",
+                                "cv_total"  = "$CV(\\hat{T})$",
+                                "me_total"  = "$ME(\\hat{T})$"
+    ))
+}
+
 
