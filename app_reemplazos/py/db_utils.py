@@ -1,4 +1,5 @@
-import sqlite3, pandas as pd
+import sqlite3
+import pandas as pd
 from datetime import datetime
 
 DB_FILE = "log4.db"
@@ -11,19 +12,28 @@ def get_conn():
 def init_sqlite_tables():
     with get_conn() as conn:
         cur = conn.cursor()
+
+        # 🔹 Elimina la tabla vieja 'cambios' si existe
+        cur.execute("DROP TABLE IF EXISTS cambios")
+
+        # 🔹 Crea la nueva tabla con la estructura final
         cur.execute("""
             CREATE TABLE IF NOT EXISTS cambios (
-                nombre_completo TEXT,
-                cedula TEXT,
-                upm_original TEXT,
+                usuario TEXT,
+                planilla_original TEXT,
+                planilla_reemplazo TEXT,
+                probabilistica TEXT,
                 upm_reemplazo TEXT,
-                de_acuerdo_reemplazo TEXT,
-                por_que_no TEXT,
-                motivo TEXT,
+                departamento_reemplazo TEXT,
+                municipio_reemplazo TEXT,
+                hora_reemplazo TEXT,
+                motivo_reemplazo TEXT,
                 fecha TEXT
             )
         """)
+
         cur.execute("CREATE TABLE IF NOT EXISTS plantilla (upm TEXT)")
+
         cur.execute("""
             CREATE TABLE IF NOT EXISTS marco (
                 FECHA_DESPACHO TEXT,
@@ -32,6 +42,7 @@ def init_sqlite_tables():
                 UPM TEXT
             )
         """)
+
         cur.execute("""
             CREATE TABLE IF NOT EXISTS muestra (
                 PLANILLA TEXT,
@@ -45,22 +56,20 @@ def init_sqlite_tables():
                 DEPTO TEXT
             )
         """)
+
         conn.commit()
 
-import pandas as pd
-from db_utils import get_conn
-import streamlit as st # Si la función se llama desde Streamlit
 
+import streamlit as st  # Para feedback si se usa en Streamlit
 
 def guardar_bases(df_remplazo, df_marco, df_muestra, df_municipios=None, var_upm="UPM"):
     """
     Guarda los DataFrames en la base de datos SQLite.
-    Crea las tablas 'reemplazo', 'marco' y 'muestra'.
+    Crea/reemplaza las tablas 'reemplazo', 'marco', 'muestra' y opcionalmente 'municipios'.
     """
     try:
         with get_conn() as conn:
             # === 1. Guardar la tabla 'reemplazo' ===
-            # Usa el DataFrame df_remplazo completo para la tabla 'reemplazo'
             df_remplazo.to_sql("reemplazo", conn, if_exists="replace", index=False)
             print("Tabla 'reemplazo' guardada exitosamente.")
 
@@ -72,24 +81,21 @@ def guardar_bases(df_remplazo, df_marco, df_muestra, df_municipios=None, var_upm
             df_muestra.to_sql("muestra", conn, if_exists="replace", index=False)
             print("Tabla 'muestra' guardada exitosamente.")
 
-            # === 3. Guardar la tabla 'muestra' ===
+            # === 4. Guardar la tabla 'municipios' (si existe) ===
             if df_municipios is not None:
-                 df_municipios.to_sql(
-                     name="municipios",
-                     con=engine,
-                     if_exists="replace",
-                     index=False
-                 )
-            
-            # Confirmar los cambios
+                df_municipios.to_sql(
+                    name="municipios",
+                    con=conn,
+                    if_exists="replace",
+                    index=False
+                )
+
             conn.commit()
             return True, "Tablas guardadas correctamente en la base de datos."
 
     except Exception as e:
-        # En caso de error, no hacer el commit y mostrar el error
         print(f"Error al guardar las bases de datos: {e}")
         return False, f"Error: {e}"
-
 
 def cargar_bases():
     with get_conn() as conn:
@@ -110,11 +116,32 @@ def cargar_bases():
 
     return plantilla, marco, muestra
 
-
-def registrar_cambio(nombre_completo, cedula, upm_original, upm_reemplazo, de_acuerdo, por_que_no, motivo):
+def registrar_cambio(usuario, planilla_original, planilla_reemplazo,
+                     upm_reemplazo, departamento_reemplazo,
+                     municipio_reemplazo, hora_reemplazo,
+                     motivo_reemplazo, probabilistica):
+    """
+    Registra un cambio en la tabla 'cambios' de la base de datos.
+    """
     with get_conn() as conn:
-        conn.execute("INSERT INTO cambios VALUES (?,?,?,?,?,?,?,?)",
-            (nombre_completo, cedula, upm_original, upm_reemplazo, de_acuerdo, por_que_no, motivo, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        conn.execute("""
+            INSERT INTO cambios (
+                usuario, planilla_original, planilla_reemplazo,
+                probabilistica, upm_reemplazo, departamento_reemplazo,
+                municipio_reemplazo, hora_reemplazo, motivo_reemplazo, fecha
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            usuario,
+            planilla_original,
+            planilla_reemplazo,
+            str(probabilistica),
+            upm_reemplazo,
+            departamento_reemplazo,
+            municipio_reemplazo,
+            hora_reemplazo,
+            motivo_reemplazo,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ))
         conn.commit()
 
 def eliminar_registros_por_rid(rowids):
@@ -124,13 +151,15 @@ def eliminar_registros_por_rid(rowids):
 
 def cargar_cambios():
     """
-    Retorna un DataFrame con todos los cambios registrados.
+    Retorna un DataFrame con todos los cambios registrados, incluyendo el rowid.
     """
     with get_conn() as conn:
         try:
-            df = pd.read_sql("SELECT * FROM cambios", conn)
+            df = pd.read_sql("SELECT rowid, * FROM cambios", conn)
         except:
             df = pd.DataFrame()
     return df
 
+
+# Inicializar las tablas al cargar
 init_sqlite_tables()

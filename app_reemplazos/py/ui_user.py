@@ -24,7 +24,7 @@ def show_user_panel(username, authenticator):
         authenticator.logout("🚪 Cerrar sesión", "sidebar")
 
     st.title("📝 Panel de Usuario")
-    st.info(f"Bienvenido {username}, aquí puedes reportar reemplazos.")
+    st.info(f"Bienvenido, en este espacio podrá gestionar solicitudes de reemplazo de manera rápida y sencilla.")
 
     # === Cargar tablas desde la BD ===
     muestra, marco, reemplazos, plantilla = load_tables_from_db()
@@ -34,17 +34,25 @@ def show_user_panel(username, authenticator):
 
     # === Interfaz de búsqueda ===
     st.info("""
-    Como usuario, usted debe completar este formulario para solicitar el cambio de su UPM (Unidad Primaria de Muestreo) actual por una nueva disponible.  
-    El objetivo es gestionar de manera eficiente los reemplazos cuando su ruta asignada no esté programada o presente algún inconveniente, 
-    asegurando así la continuidad del servicio en la Terminal de Transportes.
+Como usuario, debe completar este formulario para solicitar el reemplazo de su planilla actual por una alternativa disponible.  
+El propósito es garantizar la correcta gestión de reemplazos cuando la ruta asignada no pueda cumplirse o presente inconvenientes, asegurando así la continuidad y calidad del servicio de transporte.
     """)
 
-    # Campos en paralelo: Nombre completo y Planilla
+# Campos en paralelo: Nombre completo y Planilla
     col1, col2 = st.columns([2, 2])
     with col1:
-        nombre_completo = st.text_input("👤 Ingrese su nombre completo", value=username)
+        nombre_completo = st.text_input(
+        "👤 Ingrese su nombre completo",
+        key="nombre_completo",  # usamos session_state
+        value=st.session_state.get("nombre_completo", "")
+    )
     with col2:
-        planilla_input = st.text_input("📄 Ingrese la PLANILLA a reemplazar")
+        planilla_input = st.text_input(
+        "📄 Ingrese la PLANILLA a reemplazar",
+        key="planilla_input",
+        value=st.session_state.get("planilla_input", "")
+    )
+
 
     if st.button("🔎 Buscar reemplazos"):
         if not planilla_input.strip():
@@ -109,12 +117,17 @@ def show_user_panel(username, authenticator):
                 reemplazo_info = next((item for item in resultado if item["PLANILLA"] == reemplazo_elegido), None)
                 if reemplazo_info:
                     registrar_cambio(
-                        nombre_completo=username,
-                        upm_original=planilla_input,
-                        upm_reemplazo=reemplazo_elegido,
-                        motivo=motivo_personalizado,
-                        probabilistica=reemplazo_info.get("probabilistica")
-                    )
+                        usuario=nombre_completo,
+                        planilla_original=planilla_input,
+    planilla_reemplazo=reemplazo_elegido,
+    probabilistica=reemplazo_info.get("probabilistica"),
+    upm_reemplazo=reemplazo_info.get("UPM"),
+    departamento_reemplazo=reemplazo_info.get("DEPTO"),
+    municipio_reemplazo=reemplazo_info.get("MUNICIPIO"),
+    hora_reemplazo=reemplazo_info.get("HORA_DESPACHO"),
+    motivo_reemplazo=motivo_personalizado
+)
+
                     st.success(f"Reemplazo de la planilla {reemplazo_elegido} registrado correctamente.")
                     st.caption(f"Guardado el {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                     st.session_state.reemplazos_descartados = []
@@ -216,12 +229,14 @@ def buscar_y_sugerir_reemplazo(planilla, muestra, marco, reemplazos, plantilla, 
                                 fila_marco_reemp.get("DESTINO")   # 🔹 aquí usamos DESTINO de MARCO
                             )
                             candidatos.append({
-                                "PLANILLA": fila_reemp["REEMPLAZO"],
-                                "UPM": fila_marco_reemp.get("UPM"),
-                                "DEPTO": depto,
-                                "MUNICIPIO": fila_marco_reemp.get("DESTINO"),
-                                "probabilistica": True
-                            })
+  "PLANILLA": fila_rep.get("PLANILLA"),
+  "UPM": fila_rep.get("UPM"),
+  "DEPTO": depto,
+  "MUNICIPIO": fila_rep.get("DESTINO"),
+  "HORA_DESPACHO": fila_rep.get("HORA_DESPACHO"),
+  "probabilistica": False
+}
+)
                     return candidatos[:3]
 
     # --- 2. Reemplazos desde MARCO ---
@@ -249,43 +264,14 @@ def buscar_y_sugerir_reemplazo(planilla, muestra, marco, reemplazos, plantilla, 
                         fila_rep.get("DESTINO")   # 🔹 aquí también usamos DESTINO de MARCO
                     )
                     candidatos.append({
-                        "PLANILLA": fila_rep.get("PLANILLA"),
-                        "UPM": fila_rep.get("UPM"),
-                        "DEPTO": depto,
-                        "MUNICIPIO": fila_rep.get("DESTINO"),
-                        "probabilistica": False
-                    })
+  "PLANILLA": fila_rep.get("PLANILLA"),
+  "UPM": fila_rep.get("UPM"),
+  "DEPTO": depto,
+  "MUNICIPIO": fila_rep.get("DESTINO"),
+  "HORA_DESPACHO": fila_rep.get("HORA_DESPACHO"),
+  "probabilistica": False
+}
+)
                 return candidatos
 
     return None
-
-
-def registrar_cambio(nombre_completo, upm_original, upm_reemplazo, motivo, probabilistica):
-    """Registra el cambio en la base de datos para monitoreo."""
-    conn = get_conn()
-    cursor = conn.cursor()
-    
-    fecha_registro = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    sql = """
-    INSERT INTO registro_reemplazos (
-        nombre_completo, 
-        upm_original, 
-        upm_reemplazo, 
-        motivo, 
-        probabilistica, 
-        fecha_registro
-    ) VALUES (?, ?, ?, ?, ?, ?)
-    """
-    
-    cursor.execute(sql, (
-        nombre_completo, 
-        upm_original, 
-        upm_reemplazo, 
-        motivo, 
-        probabilistica, 
-        fecha_registro
-    ))
-    
-    conn.commit()
-    conn.close()

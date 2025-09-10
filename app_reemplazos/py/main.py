@@ -27,7 +27,7 @@ else:
     roles = config["credentials"]["usernames"].get(username, {}).get("roles", []) if username else []
     is_admin, is_user = "admin" in roles, "user" in roles
 
-    st.write(f"Bienvenido {user_name_display} 👋")
+    st.write(f"Bienvenido 👋")
 
     if is_admin:
         show_admin_panel(username, authenticator)
