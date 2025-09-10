@@ -7,13 +7,13 @@ credentials:
     admin:
       email: admin@example.com
       name: Administrador
-      password: $2b$12$s2VSS9VUSN4YyB72vSpzmusvlOGV0mqZrQUvQN3u.Hc7TYUKVeUdq
+      password: "u12345"  # Texto plano
       roles:
       - admin
     usuario1:
       email: guerrerostalyn@gmail.com
-      name: 'Stalyn Guerrero '
-      password: $2b$12$s2VSS9VUSN4YyB72vSpzmusvlOGV0mqZrQUvQN3u.Hc7TYUKVeUdq
+      name: 'Stalyn Guerrero'
+      password: "u12345"  # Texto plano
       roles:
       - user
 preauthorized:
