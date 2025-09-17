@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 
-DB_FILE = "log4.db"
+DB_FILE = "app_reemplazos/py/log4.db"
 
 def get_conn():
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
