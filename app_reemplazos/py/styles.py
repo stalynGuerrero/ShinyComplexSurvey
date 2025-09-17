@@ -58,7 +58,7 @@ def render_sidebar_logo():
     """
     Renderiza el logo y encabezado en el sidebar.
     """
-    st.image("assets/IDT_logo.png", use_container_width=True)
+    st.image("app_reemplazos/py/assets/IDT_logo.png", use_container_width=True)
     st.markdown(
         """
         <div style="text-align:center; margin-top:-10px; margin-bottom:20px;">
