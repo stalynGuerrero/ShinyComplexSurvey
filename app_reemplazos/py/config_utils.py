@@ -1,7 +1,7 @@
 import yaml, os
 from yaml.loader import SafeLoader
 
-CONFIG_FILE = "config.yaml"
+CONFIG_FILE = "app_reemplazos/py/config.yaml"
 
 def guardar_config(config_obj):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
