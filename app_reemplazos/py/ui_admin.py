@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import openpyxl  # Para archivos .xlsx
-from db_utils import guardar_bases, cargar_cambios, eliminar_registros_por_rid
+from db_utils import guardar_bases, cargar_cambios
 from ui_users import show_user_admin  
 from styles import load_styles, render_sidebar_logo
 
