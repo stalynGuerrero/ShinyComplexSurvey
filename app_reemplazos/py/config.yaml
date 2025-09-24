@@ -13,67 +13,67 @@ credentials:
     monica.suarez:
       email: monica.suarez@idt.gov.co
       name: Mónica Gimena Suarez Forero
-      password: $2b$12$8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3yAeE6Ku
+      password: monica.1234
       roles:
       - user
     katheryn.cabrera:
       email: katheryn.cabrera@idt.gov.co
       name: Katheryn Mayerly Cabrera Roa
-      password: $2b$12$LpPxMwRrT7sV3cGpL9hM3yAeE6Ku8QZzLkqW9nY8Yb6JtKqjUO
+      password: Kathe.1234
       roles:
       - user
     cindy.gonzalez:
       email: cindy.gonzalez@idt.gov.co
       name: Cindy Alejandra González Duque
-      password: $2b$12$3cGpL9hM3yAeE6Ku8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7
+      password: Cindy.1234
       roles:
       - user
     andres.gutierrez:
       email: andres.gutierrez@idt.gov.co
       name: Carlos Andrés Gutiérrez Carrero
-      password: $2b$12$9hM3yAeE6Ku8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL
+      password: Andres.1234
       roles:
       - user
     diana.quinones:
       email: diana.quinones@idt.gov.co
       name: Diana Liseth Quiñones Montaño
-      password: $2b$12$yAeE6Ku8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3
+      password: Diana.1234
       roles:
       - user
     diana.suarez:
       email: diana.suarez@idt.gov.co
       name: Diana Estefanía Suarez Vargas
-      password: $2b$12$E6Ku8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3yAe
+      password: DianaS.1234
       roles:
       - user
     jose.ramirez:
       email: jose.ramirez@idt.gov.co
       name: José Yesid Ramírez Ruíz
-      password: $2b$12$Ku8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3yAeE6
+      password: Jose.1234
       roles:
       - user
     alizon.pinilla:
       email: alizon.pinilla@idt.gov.co
       name: Alizon Michell Pinilla Pabón
-      password: $2b$12$u8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3yAeE6K
+      password: Alizon.1234
       roles:
       - user
     claudia.martinez:
       email: claudia.martinez@idt.gov.co
       name: Claudia Paola Martínez Rodríguez
-      password: $2b$12$8QZzLkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3yAeE6Ku
+      password: Claudia.1234
       roles:
       - user
     nini.camacho:
       email: nini.camacho@idt.gov.co
       name: Nini Johanna Camacho Traslaviña
-      password: $2b$12$LkqW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3yAeE6Ku8QZ
+      password: Nini.1234
       roles:
       - user
     andres.quintero:
       email: andres.quintero@idt.gov.co
       name: Andrés Fernando Quintero Atará
-      password: $2b$12$qW9nY8Yb6JtKqjUO3vR8mXwN2pT7sV1cGpL9hM3yAeE6Ku8QZzL
+      password: AndresQ.1234
       roles:
       - user
 preauthorized:
