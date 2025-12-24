@@ -3,4 +3,6 @@
 export(build_survey_design)
 export(describe_survey_design)
 export(estimate_survey)
+export(format_results_table)
 export(load_survey_data)
+export(plot_results_bar)
