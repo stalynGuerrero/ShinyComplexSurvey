@@ -9,6 +9,7 @@
 #'
 #' @return A tbl_svy object
 #' @export
+
 build_survey_design <- function(
     data,
     weight,
@@ -36,24 +37,22 @@ build_survey_design <- function(
     )
   }
   
-  design <- srvyr::as_survey_design(
-    data = data,
-    weights = !!rlang::sym(weight),
-    strata  = if (!is.null(strata))  !!rlang::sym(strata)  else NULL,
-    ids     = if (!is.null(cluster)) !!rlang::sym(cluster) else ~1,
-    fpc     = if (!is.null(fpc))     !!rlang::sym(fpc)     else NULL,
+  # ---- construir fórmulas ----
+  w  <- stats::as.formula(paste0("~", weight))
+  id <- if (!is.null(cluster)) stats::as.formula(paste0("~", cluster)) else ~1
+  st <- if (!is.null(strata))  stats::as.formula(paste0("~", strata))  else NULL
+  fp <- if (!is.null(fpc))     stats::as.formula(paste0("~", fpc))     else NULL
+  
+  design <- survey::svydesign(
+    ids     = id,
+    strata  = st,
+    weights = w,
+    fpc     = fp,
+    data    = data,
     nest    = nest
   )
   
-  attr(design, "design_spec") <- list(
-    weight  = weight,
-    strata  = strata,
-    cluster = cluster,
-    fpc     = fpc,
-    nest    = nest
-  )
-  
-  design
+  srvyr::as_survey(design)
 }
 
 

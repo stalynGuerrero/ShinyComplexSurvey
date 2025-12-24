@@ -2,4 +2,5 @@
 
 export(build_survey_design)
 export(describe_survey_design)
+export(estimate_survey)
 export(load_survey_data)
