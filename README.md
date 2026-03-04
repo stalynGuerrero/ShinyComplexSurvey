@@ -1,68 +1,91 @@
 # ShinyComplexSurvey: Una aplicación Shiny para análisis de encuestas complejas <img src="app_estimacion/ShinyComplexSurvey_hex.png" align="right" width="120"/>
 
 **ShinyComplexSurvey** es una aplicación de `R Shiny` diseñada para simplificar el
-análisis de datos de encuestas complejas. Permite a los usuarios explorar, 
+análisis de datos de encuestas complejas. Permite a los usuarios explorar,
 analizar y visualizar datos de encuestas probabilísticas de manera intuitiva y
-sin necesidad de escribir código, manejando automáticamente características del 
+sin necesidad de escribir código, manejando automáticamente características del
 diseño de muestreo como la estratificación y los pesos.
 
-Esta herramienta es ideal para investigadores, estudiantes y analistas
-que trabajan con datos de encuestas provenientes de fuentes complejas
-(por ejemplo, encuestas nacionales o censos) y que necesitan realizar análisis 
-descriptivos, numéricos y gráficos de manera eficiente.
-
-
+Esta herramienta está orientada a investigadores, estudiantes y analistas que
+trabajan con datos de encuestas complejas (por ejemplo, encuestas nacionales o
+censos) y necesitan generar resultados descriptivos, numéricos y gráficos de
+forma eficiente.
 
 ## 🚀 Características principales
 
 - Carga y gestión de bases de datos de encuestas complejas.
-- Definición del diseño muestral (estratos, conglomerados, pesos).
-- Estimación de indicadores con errores estándar, intervalos de confianza y coeficientes de variación.
+- Definición del diseño muestral (estratos, conglomerados y pesos).
+- Estimación de indicadores con errores estándar, intervalos de confianza y
+  coeficientes de variación.
 - Visualización gráfica interactiva:
   - Tablas dinámicas con filtrado y exportación.
-  - Gráficos de barras, comparaciones y gráficos avanzados (modo esquisse).
+  - Gráficos de barras, comparaciones y gráficos avanzados (modo `esquisse`).
 - Descarga de resultados en formatos estándar (`.csv`, `.xlsx`).
 
----
+## 📦 Instalación
 
-## Cómo Utilizar la Aplicación
+> Estado actual: repositorio en desarrollo temprano.
 
-Para usar `ShinyComplexSurvey`, sigue estos sencillos pasos:
+### Opción 1: desarrollo local (recomendada)
 
-1. **Cargar los datos**: Sube tus datos de encuestas en formato CSV o RData. Asegúrate de que tu archivo contenga las variables que definen el diseño del muestreo (pesos, estratos, conglomerados).
+```r
+# 1) Clona el repositorio
+git clone <URL-DEL-REPO>
 
-2. **Identificar el diseño de la encuesta:** La aplicación te guiará para especificar las variables que corresponden a los pesos de la encuesta, los estratos y los conglomerados.
+# 2) Instala dependencias principales
+install.packages(c(
+  "shiny", "dplyr", "tidyr", "DT", "glue", "plotly", "bslib",
+  "shinyWidgets", "shinyjs", "shinydashboard", "shinythemes",
+  "esquisse", "ggplot2", "readr", "writexl"
+))
 
-3. **Explorar y Analizar**: Utiliza las diferentes pestañas de la interfaz para realizar análisis descriptivos, numéricos y gráficos.
+# 3) Carga el proyecto
+setwd("ShinyComplexSurvey")
+```
 
-## Requisitos y Paquetes de R
+### Opción 2: como paquete (cuando se publique)
 
-Para ejecutar esta aplicación, necesitarás instalar los siguientes paquetes de R. 
-Puedes hacerlo ejecutando este código en tu consola de R:
+```r
+# remotes::install_github("usuario/ShinyComplexSurvey")
+```
 
-`library(shiny)`
+## 🧪 Ejemplo mínimo reproducible
 
-`library(tidyverse)`
+El siguiente ejemplo crea una base sintética compatible con una encuesta
+compleja (peso, estrato y conglomerado):
 
-`library(DT)`
+```r
+set.seed(123)
+encuesta_demo <- data.frame(
+  id = 1:200,
+  estrato = sample(c("Urbano", "Rural"), 200, replace = TRUE),
+  conglomerado = sample(1:40, 200, replace = TRUE),
+  peso = runif(200, min = 0.5, max = 3),
+  ingreso = round(rlnorm(200, meanlog = 6.2, sdlog = 0.35), 2)
+)
 
-`library(glue)`
+head(encuesta_demo)
+```
 
-`library(scales)`
+Con este archivo puedes validar la carga de datos, selección de variables de
+diseño y generación de salidas descriptivas dentro de la app.
 
-`library(plotly)`
+## ▶️ Cómo lanzar la app exactamente
 
-`library(bslib)`
+Actualmente este repositorio no incluye todavía un `app.R` en la raíz ni una
+función exportada del paquete para iniciar la aplicación. El flujo esperado,
+una vez incorporado el archivo de entrada, será uno de estos dos:
 
-`library(shinyWidgets)`
+```r
+# Si el proyecto usa app.R en la raíz
+shiny::runApp(".")
 
-`library(shinyjs)`
+# Si el proyecto usa una carpeta de app
+shiny::runApp("app_estimacion")
+```
 
-`library(shinydashboard)`
+### Sugerencia para cerrar onboarding
 
-`library(shinythemes)`
-
-`library(esquisse)`
-
-Una vez que tengas todos los paquetes instalados, puedes ejecutar la aplicación 
-directamente desde el archivo `app.R.`
+Cuando agregues el punto de entrada definitivo, documenta **un solo comando
+oficial** (por ejemplo `shiny::runApp("app_estimacion")`) para evitar
+ambigüedad a nuevos usuarios.
