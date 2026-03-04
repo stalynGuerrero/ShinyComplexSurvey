@@ -45,4 +45,5 @@ utils::globalVariables(c(
 #' @importFrom stats coef vcov update weights rlnorm runif
 #' @importFrom utils head
 #' @importFrom magrittr %>%
+#' @importFrom dplyr n_distinct
 NULL
