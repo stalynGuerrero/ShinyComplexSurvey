@@ -1,5 +1,5 @@
 Package: ShinyComplexSurvey
-Title: Tidy Tools for Analysis of Complex Survey Data
+Title: Interfaz Shiny para Analisis de Encuestas Complejas
 Version: 0.0.0.9000
 Authors@R: 
     person(
@@ -14,10 +14,12 @@ Description:
     such as means, totals, and proportions with associated measures of uncertainty.
     It is designed as a reusable statistical backend that can be used programmatically
     or integrated into interactive applications built with Shiny.
-License: MIT + file LICENSE
+License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.1.0)
 Imports:
     dplyr,
     tibble,
@@ -26,10 +28,20 @@ Imports:
     haven,
     stringr,
     rlang,
+    purrr,
+    shiny,
+    DT,
     tools,
+    stats,
+    utils,
     srvyr,
     survey,
+    magrittr,
     ggplot2
 Suggests: 
+    knitr,
+    rmarkdown,
+    printr,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3

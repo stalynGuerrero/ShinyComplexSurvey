@@ -2,18 +2,18 @@
 % Please edit documentation in R/05_results_format.R
 \name{format_results_table}
 \alias{format_results_table}
-\title{Format survey estimation results for presentation}
+\title{Format survey results as a table}
 \usage{
 format_results_table(results, digits = 2)
 }
 \arguments{
 \item{results}{Tibble returned by estimate_survey().}
 
-\item{digits}{Integer. Number of decimal places.}
+\item{digits}{Number of decimal places.}
 }
 \value{
 A formatted tibble.
 }
 \description{
-Format survey estimation results for presentation
+Format survey results as a table
 }

@@ -56,32 +56,45 @@ build_survey_design <- function(
 }
 
 
-
-#' Describe a survey design
+#' Describe a complex survey design
 #'
-#' @param design A tbl_svy object
+#' @param design A tbl_svy object.
 #'
-#' @return Tibble with basic design diagnostics
+#' @return A tibble with basic design diagnostics.
 #' @export
 describe_survey_design <- function(design) {
   
   if (!inherits(design, "tbl_svy")) {
-    rlang::abort("`design` must be a srvyr survey object.")
+    rlang::abort("`design` must be a srvyr tbl_svy object.")
   }
   
-  data <- design$variables
-  spec <- attr(design, "design_spec")
+  svy <- design
+  w   <- as.numeric(weights(svy))
+  
+  # data del diseño (modelo)
+  mf <- stats::model.frame(svy)
+  
+  # número de estratos
+  n_strata <- if (!is.null(svy$strata)) {
+    dplyr::n_distinct(svy$strata)
+  } else {
+    NA_integer_
+  }
+  
+
+  n_clusters <- if (!is.null(design$cluster)) {
+    n_distinct(design$cluster[[1]])
+  } else {
+    NA_integer_
+  }
+  
   
   tibble::tibble(
-    n_obs        = nrow(data),
-    n_strata     = if (!is.null(spec$strata))
-      dplyr::n_distinct(data[[spec$strata]])
-    else NA_integer_,
-    n_clusters   = if (!is.null(spec$cluster))
-      dplyr::n_distinct(data[[spec$cluster]])
-    else NA_integer_,
-    weight_min   = min(data[[spec$weight]], na.rm = TRUE),
-    weight_mean  = mean(data[[spec$weight]], na.rm = TRUE),
-    weight_max   = max(data[[spec$weight]], na.rm = TRUE)
+    n_obs       = nrow(mf),
+    n_strata    = n_strata,
+    n_clusters  = n_clusters,
+    weight_min  = min(w, na.rm = TRUE),
+    weight_max  = max(w, na.rm = TRUE),
+    weight_mean = mean(w, na.rm = TRUE)
   )
 }

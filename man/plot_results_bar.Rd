@@ -2,7 +2,7 @@
 % Please edit documentation in R/05_results_format.R
 \name{plot_results_bar}
 \alias{plot_results_bar}
-\title{Plot survey estimation results as a bar chart with confidence interval}
+\title{Plot survey estimates as bar chart}
 \usage{
 plot_results_bar(results)
 }
@@ -10,8 +10,8 @@ plot_results_bar(results)
 \item{results}{Tibble returned by estimate_survey().}
 }
 \value{
-A ggplot object.
+ggplot object.
 }
 \description{
-Plot survey estimation results as a bar chart with confidence interval
+Plot survey estimates as bar chart
 }

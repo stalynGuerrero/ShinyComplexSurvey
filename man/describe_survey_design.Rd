@@ -2,16 +2,16 @@
 % Please edit documentation in R/02_design.R
 \name{describe_survey_design}
 \alias{describe_survey_design}
-\title{Describe a survey design}
+\title{Describe a complex survey design}
 \usage{
 describe_survey_design(design)
 }
 \arguments{
-\item{design}{A tbl_svy object}
+\item{design}{A tbl_svy object.}
 }
 \value{
-Tibble with basic design diagnostics
+A tibble with basic design diagnostics.
 }
 \description{
-Describe a survey design
+Describe a complex survey design
 }
