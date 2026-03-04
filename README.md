@@ -22,11 +22,8 @@ forma eficiente.
   - Gráficos de barras, comparaciones y gráficos avanzados (modo `esquisse`).
 - Descarga de resultados en formatos estándar (`.csv`, `.xlsx`).
 
-## 📦 Instalación
 
-> Estado actual: repositorio en desarrollo temprano.
-
-### Opción 1: desarrollo local (recomendada)
+### Desarrollo local
 
 ```r
 # 1) Clona el repositorio
@@ -41,12 +38,6 @@ install.packages(c(
 
 # 3) Carga el proyecto
 setwd("ShinyComplexSurvey")
-```
-
-### Opción 2: como paquete (cuando se publique)
-
-```r
-# remotes::install_github("usuario/ShinyComplexSurvey")
 ```
 
 ## 🧪 Ejemplo mínimo reproducible
@@ -84,8 +75,4 @@ shiny::runApp(".")
 shiny::runApp("app_estimacion")
 ```
 
-### Sugerencia para cerrar onboarding
 
-Cuando agregues el punto de entrada definitivo, documenta **un solo comando
-oficial** (por ejemplo `shiny::runApp("app_estimacion")`) para evitar
-ambigüedad a nuevos usuarios.
