@@ -1,11 +1,41 @@
 Package: ShinyComplexSurvey
-Title: What the Package Does (One Line, Title Case)
+Title: Interfaz Shiny para Analisis de Encuestas Complejas
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Authors@R:
+    c(
+      person(
+        given = "Equipo",
+        family = "ShinyComplexSurvey",
+        email = "equipo.shinycomplexsurvey@example.com",
+        role = c("aut", "cre")
+      )
+    )
+Description: Aplicacion Shiny para analizar datos de encuestas complejas de
+    forma guiada, incluyendo definicion del diseno muestral, calculo de
+    indicadores con medidas de precision y visualizacion interactiva de
+    resultados para usuarios sin necesidad de programar.
+License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.1.0)
+Imports:
+    bslib,
+    DT,
+    dplyr,
+    esquisse,
+    ggplot2,
+    glue,
+    plotly,
+    readr,
+    shiny,
+    shinydashboard,
+    shinyjs,
+    shinythemes,
+    shinyWidgets,
+    tidyr,
+    writexl
+Suggests:
+    knitr,
+    rmarkdown
