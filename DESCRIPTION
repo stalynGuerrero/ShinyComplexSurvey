@@ -1,15 +1,7 @@
 Package: ShinyComplexSurvey
 Title: Interfaz Shiny para Analisis de Encuestas Complejas
 Version: 0.0.0.9000
-Authors@R:
-    c(
-      person(
-        given = "Equipo",
-        family = "ShinyComplexSurvey",
-        email = "equipo.shinycomplexsurvey@example.com",
-        role = c("aut", "cre")
-      )
-    )
+Authors: Stalyn Guerrero 
 Description: Aplicacion Shiny para analizar datos de encuestas complejas de
     forma guiada, incluyendo definicion del diseno muestral, calculo de
     indicadores con medidas de precision y visualizacion interactiva de
