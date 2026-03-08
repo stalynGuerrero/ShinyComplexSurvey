@@ -4,7 +4,7 @@
 \alias{generate_example_data}
 \title{Generar datos simulados de encuesta compleja}
 \usage{
-generate_example_data(seed = 123)
+generate_example_data(n = 3000, seed = 123)
 }
 \arguments{
 \item{seed}{Semilla aleatoria}

@@ -1,4 +1,4 @@
-shiny_server <- function(input, output, session) {
+app_server <- function(input, output, session) {
   
   # =========================
   # Datos
@@ -34,16 +34,6 @@ shiny_server <- function(input, output, session) {
   # =========================
   mod_resultados_server(
     "resultados",
-    results = estimacion$results
-  )
-  
-  # =========================
-  # Diagnóstico
-  # =========================
-  mod_diagnostico_server(
-    "diag",
-    datos = datos$data,
-    diseno = diseno$design,
     estimacion = estimacion$results
   )
 }

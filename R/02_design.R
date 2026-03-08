@@ -36,7 +36,7 @@ build_survey_design <- function(
       class = "shinycomplexsurvey_missing_design_vars"
     )
   }
-  
+
   # ---- construir fórmulas ----
   w  <- stats::as.formula(paste0("~", weight))
   id <- if (!is.null(cluster)) stats::as.formula(paste0("~", cluster)) else ~1

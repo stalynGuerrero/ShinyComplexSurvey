@@ -2,6 +2,328 @@ mod_estimacion_server <- function(id, design) {
   
   shiny::moduleServer(id, function(input, output, session) {
     
+    
+    output$theory_box <- shiny::renderUI({
+      
+      shiny::req(input$estimator)
+      
+      theory_text <- switch(
+        
+        input$estimator,
+        
+        # =========================================================
+        # MEDIA
+        # =========================================================
+        "mean" = "
+
+<b>Media poblacional bajo diseño complejo</b><br><br>
+
+El estimador de la media poblacional se obtiene como:
+
+$$
+\\hat{\\bar{Y}} =
+\\frac{\\sum_{i \\in s} w_i y_i}
+     {\\sum_{i \\in s} w_i}
+$$
+
+donde:
+
+<ul>
+<li>$w_i = 1/\\pi_i$ es el peso de expansión</li>
+<li>$\\pi_i$ es la probabilidad de inclusión</li>
+<li>$y_i$ es la variable de interés</li>
+</ul>
+
+Este estimador puede interpretarse como el estimador de Horvitz–Thompson del total dividido por el tamaño poblacional estimado.
+
+$$
+\\hat{\\bar{Y}} = \\frac{\\hat{T}_Y}{\\hat{N}}
+$$
+
+donde
+
+$$
+\\hat{T}_Y = \\sum w_i y_i
+\\quad
+\\hat{N} = \\sum w_i
+$$
+
+<br>
+
+<b>Varianza aproximada</b>
+
+$$
+\\widehat{Var}(\\hat{\\bar{Y}}) =
+\\frac{1}{(\\sum w_i)^2}
+\\widehat{Var}\\left(\\sum w_i y_i\\right)
+$$
+
+La varianza se estima mediante linearización de Taylor o métodos de replicación.
+
+",
+        
+        # =========================================================
+        # TOTAL
+        # =========================================================
+        "total" = "
+
+<b>Total poblacional</b><br><br>
+
+El estimador del total poblacional corresponde al estimador de Horvitz–Thompson:
+
+$$
+\\hat{T}_{HT} =
+\\sum_{i \\in s} w_i y_i
+$$
+
+donde:
+
+<ul>
+<li>$w_i = 1/\\pi_i$ es el peso de expansión</li>
+<li>$\\pi_i$ es la probabilidad de inclusión</li>
+</ul>
+
+Bajo muestreo estratificado:
+
+$$
+\\hat{T} =
+\\sum_{h=1}^{H}
+\\sum_{i \\in s_h}
+w_{hi} y_{hi}
+$$
+
+Este estimador es insesgado bajo el diseño de muestreo.
+
+",
+        
+        # =========================================================
+        # PROPORCIÓN
+        # =========================================================
+        "prop" = "
+
+<b>Proporción poblacional</b><br><br>
+
+Definiendo una variable indicadora:
+
+$$
+I_i =
+\\begin{cases}
+1 & \\text{si la unidad pertenece a la categoría de interés} \\\\
+0 & \\text{en otro caso}
+\\end{cases}
+$$
+
+La proporción poblacional se estima como:
+
+$$
+\\hat{P} =
+\\frac{\\sum_{i \\in s} w_i I_i}
+     {\\sum_{i \\in s} w_i}
+$$
+
+Este estimador es equivalente a la media ponderada de la variable indicadora.
+
+La varianza se aproxima mediante linearización de Taylor.
+
+",
+        
+        # =========================================================
+        # RAZÓN
+        # =========================================================
+        "ratio" = "
+
+<b>Estimador de razón</b><br><br>
+
+El estimador de razón compara dos totales poblacionales:
+
+$$
+\\hat{R} =
+\\frac{\\sum_{i \\in s} w_i y_i}
+     {\\sum_{i \\in s} w_i x_i}
+$$
+
+donde:
+
+<ul>
+<li>$w_i$ son los pesos de expansión</li>
+<li>$y_i$ es la variable del numerador</li>
+<li>$x_i$ es la variable del denominador</li>
+</ul>
+
+Este estimador es <b>no lineal</b> y su varianza se aproxima mediante linearización.
+
+<br>
+
+<b>Varianza aproximada</b>
+
+$$
+\\widehat{Var}(\\hat{R}) \\approx
+\\frac{1}{\\hat{X}^2}
+\\widehat{Var}(\\hat{Y} - \\hat{R}\\hat{X})
+$$
+
+donde
+
+$$
+\\hat{Y} = \\sum w_i y_i
+\\quad
+\\hat{X} = \\sum w_i x_i
+$$
+
+<br>
+
+<b>Interpretación</b>
+
+El estimador de razón se utiliza cuando existe correlación entre $Y$ y $X$,
+lo que puede reducir la varianza del estimador.
+
+",
+        
+        # =========================================================
+        # CUANTILES
+        # =========================================================
+        "quantile" = "
+
+<b>Cuantiles ponderados</b><br><br>
+
+Los cuantiles poblacionales se definen a partir de la función de distribución acumulada ponderada:
+
+$$
+F_w(y) =
+\\frac{\\sum w_i I(Y_i \\le y)}{\\sum w_i}
+$$
+
+El cuantil $q_p$ satisface:
+
+$$
+F_w(q_p) = p
+$$
+
+Los cuantiles ponderados permiten estimar percentiles de la distribución poblacional bajo diseños complejos.
+
+La varianza suele estimarse mediante:
+
+<ul>
+<li>linearización de Woodruff</li>
+<li>métodos de replicación (Bootstrap, Jackknife, BRR)</li>
+</ul>
+
+",
+        
+        # =========================================================
+        # DEFAULT
+        # =========================================================
+        "Seleccione un estimador para visualizar su marco teórico."
+        
+      )
+      
+      shiny::tagList(
+        
+        shiny::withMathJax(),
+        
+        shiny::div(
+          style = "
+        background-color:#f8f9fa;
+        padding:20px;
+        border-radius:10px;
+        font-size:14px;
+      ",
+          shiny::HTML(
+            
+              theory_text,
+            
+          )
+        )
+        
+      )
+    })
+    
+    observeEvent(input$estimator, {
+      
+      if (input$estimator == "ratio") {
+        updateSelectInput(session, "y_var", selected = NULL)
+      }
+      
+    })
+    
+    output$quality_theory <- shiny::renderUI({
+      
+      shiny::withMathJax(
+        
+        shiny::div(
+          style="
+      background:#f8f9fa;
+      padding:20px;
+      border-radius:10px;
+      font-size:14px;
+      ",
+          
+          HTML("
+<b>Coeficiente de Variación (CV)</b><br><br>
+
+El coeficiente de variación mide la precisión relativa del estimador.
+
+$$
+CV(\\hat{\\theta}) =
+\\frac{SE(\\hat{\\theta})}{\\hat{\\theta}}
+$$
+
+En porcentaje:
+
+$$
+CV(\\hat{\\theta}) =
+\\frac{SE(\\hat{\\theta})}{\\hat{\\theta}} \\times 100
+$$
+
+<br>
+
+<b>Interpretación</b>
+
+<ul>
+<li><b>&lt; 5%</b> → Muy alta precisión</li>
+<li><b>5% – 10%</b> → Alta precisión</li>
+<li><b>10% – 20%</b> → Precisión aceptable</li>
+<li><b>20% – 30%</b> → Uso con cautela</li>
+<li><b>&gt; 30%</b> → Baja precisión</li>
+</ul>
+
+<br>
+
+<hr>
+
+<b>Efecto de diseño (Design Effect)</b><br><br>
+
+El efecto de diseño mide cuánto aumenta la varianza debido al diseño muestral complejo comparado con un muestreo aleatorio simple.
+
+$$
+DEFF =
+\\frac{Var_{diseño}(\\hat{\\theta})}
+{Var_{MAS}(\\hat{\\theta})}
+$$
+
+<br>
+
+<b>Tamaño de muestra efectivo</b>
+
+$$
+n_{eff} =
+\\frac{n}{DEFF}
+$$
+
+<br>
+<hr><b>Referencias</b>
+                 <ul>
+                 <li>Cochran, W. (1977). <i>Sampling Techniques</i>. Wiley.</li>
+                 <li>Särndal, C., Swensson, B., & Wretman, J. (1992). <i>Model Assisted Survey Sampling</i>. Springer.</li>
+                 <li>Lohr, S. (2021). <i>Sampling: Design and Analysis</i>. CRC Press.</li>
+                 <li>Lumley, T. (2010). <i>Complex Surveys: A Guide to Analysis Using R</i>. Wiley.</li>
+                 </ul>
+")
+        )
+      )
+    })
+    
+    
     ns <- session$ns
     
     # ==================================================
@@ -11,15 +333,38 @@ mod_estimacion_server <- function(id, design) {
       
       des <- design()
       shiny::req(des)
+      shiny::req(!is.null(des$variables))
       
-      vars <- colnames(des$variables)
+      vars <- names(des$variables)
+      shiny::req(length(vars) > 0)
       
-      shiny::updateSelectInput(session, "y_var", choices = vars, selected = vars[1])
-      shiny::updateSelectInput(session, "numerator", choices = vars, selected = vars[1])
-      shiny::updateSelectInput(session, "denominator", choices = vars, selected = vars[2])
+      shiny::updateSelectInput(session, "y_var", choices = vars)
+      shiny::updateSelectInput(session, "numerator", choices = vars)
+      shiny::updateSelectInput(session, "denominator", choices = vars)
       shiny::updateSelectInput(session, "domain_vars", choices = c("Ninguno" = "", vars))
-    }, ignoreInit = TRUE)
+    })
     
+    # ==================================================
+    # 1b. Filtrar variables según tipo de estimador
+    # ==================================================
+    shiny::observeEvent(list(design(), input$estimator), {
+      
+      des <- design()
+      shiny::req(des)
+      shiny::req(!is.null(des$variables))
+      shiny::req(input$estimator)
+      
+      vars <- des$variables
+      
+      if (input$estimator %in% c("mean", "total", "quantile")) {
+        valid_vars <- names(vars)[sapply(vars, is.numeric)]
+      } else {
+        valid_vars <- names(vars)
+      }
+      
+      shiny::updateSelectInput(session, "y_var", choices = valid_vars)
+      
+    }, ignoreInit = TRUE)
     
     # ==================================================
     # 2. UI dinámica para ratio categórica (usa y_var)
@@ -146,13 +491,13 @@ mod_estimacion_server <- function(id, design) {
       res <- results_r()
       shiny::req(res)
       
-      res_fmt <- res |>
+      res_fmt <- res  %>% 
         dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
       
       DT::datatable(
         res_fmt,
         rownames = FALSE,
-        options = list(pageLength = 5, scrollX = TRUE)
+        options = list(pageLength = 10, scrollX = TRUE)
       )
     })
     

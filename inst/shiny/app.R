@@ -2,6 +2,6 @@ library(shiny)
 library(ShinyComplexSurvey)
 
 shinyApp(
-  ui = shiny_ui(),
-  server = shiny_server
+  ui = app_ui(),
+  server = app_server
 )

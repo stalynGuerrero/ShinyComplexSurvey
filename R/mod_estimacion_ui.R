@@ -11,11 +11,15 @@ mod_estimacion_ui <- function(id) {
       shiny::column(
         3,
         shiny::wellPanel(
+          
           shiny::h4("Parámetros"),
           
+          # =====================================================
+          # Tipo de estimación
+          # =====================================================
           shiny::selectInput(
-            ns("estimator"),
-            "Tipo de estimación",
+            inputId = ns("estimator"),
+            label   = "Tipo de estimación",
             choices = c(
               "Media"       = "mean",
               "Total"       = "total",
@@ -24,54 +28,71 @@ mod_estimacion_ui <- function(id) {
               "Cuantiles"   = "quantile"
             )
           ),
-          # -------------------------
+          
+          # =====================================================
           # RAZÓN
-          # -------------------------
+          # =====================================================
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'ratio'", ns("estimator")),
+            
             shiny::selectInput(
-              ns("numerator"),
-              "Numerador",
+              inputId = ns("numerator"),
+              label   = "Numerador",
               choices = NULL
             ),
+            
             shiny::selectInput(
-              ns("denominator"),
-              "Denominador",
+              inputId = ns("denominator"),
+              label   = "Denominador",
               choices = NULL
             ),
-            uiOutput(ns("ratio_levels_ui"))  
+            
+            shiny::uiOutput(ns("ratio_levels_ui"))
           ),
-           
           
-          # -------------------------
+          # =====================================================
           # CUANTILES
-          # -------------------------
+          # =====================================================
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'quantile'", ns("estimator")),
+            
             shiny::textInput(
-              ns("probs"),
-              "Cuantiles (ej: 0.25, 0.5, 0.75)",
-              value = "0.25, 0.5, 0.75"
+              inputId = ns("probs"),
+              label   = "Cuantiles (ej: 0.25, 0.5, 0.75)",
+              value   = "0.25, 0.5, 0.75"
             )
           ),
           
-          shiny::selectInput(
-            ns("y_var"),
-            "Variable de interés",
-            choices = NULL
+          # =====================================================
+          # VARIABLE DE INTERÉS (CORREGIDO)
+          # =====================================================
+          shiny::conditionalPanel(
+            condition = sprintf("input['%s'] != 'ratio'", ns("estimator")),
+            
+            shiny::selectInput(
+              inputId = ns("y_var"),
+              label   = "Variable de interés",
+              choices = NULL
+            )
           ),
           
+          # =====================================================
+          # DOMINIOS
+          # =====================================================
           shiny::selectInput(
-            ns("domain_vars"),
-            "Dominio(s) (opcional)",
+            inputId = ns("domain_vars"),
+            label   = "Dominio(s) (opcional)",
             choices = c("Ninguno" = ""),
             multiple = TRUE
           ),
           
+          # =====================================================
+          # BOTÓN
+          # =====================================================
           shiny::actionButton(
-            ns("run"),
-            "Ejecutar estimación",
-            class = "btn-primary"
+            inputId = ns("run"),
+            label   = "Ejecutar estimación",
+            class   = "btn-primary"
           )
         )
       ),
@@ -79,11 +100,22 @@ mod_estimacion_ui <- function(id) {
       shiny::column(
         9,
         shiny::wellPanel(
+          
+          shiny::h4("Marco teórico"),
+          shiny::uiOutput(ns("theory_box")),
+          
+          shiny::hr(),
+          
           shiny::h4("Estado de la estimación"),
           shiny::verbatimTextOutput(ns("log")),
+          
           shiny::hr(),
+          
           shiny::h4("Resultado (vista previa)"),
-          DT::DTOutput(ns("preview"))
+          DT::DTOutput(ns("preview")), 
+          
+          shiny::h4("Indicadores de calidad de la estimación"),
+          shiny::uiOutput(ns("quality_theory"))
         )
       )
     )
