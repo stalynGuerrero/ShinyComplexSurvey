@@ -1,4 +1,5 @@
 mod_diseno_ui <- function(id) {
+  
   ns <- shiny::NS(id)
   
   shiny::fluidPage(
@@ -20,12 +21,10 @@ mod_diseno_ui <- function(id) {
             choices = c(
               "Simple (SRS)" = "srs",
               "Estratificado" = "stratified",
-              "Conglomerado" = "cluster",
-              "Bietápico" = "two_stage"
+              "Conglomerados / Multietápico" = "cluster"
             )
           ),
           
-          # NUEVO: teoría dinámica
           uiOutput(ns("design_theory")),
           
           uiOutput(ns("design_arguments")),
@@ -38,17 +37,22 @@ mod_diseno_ui <- function(id) {
         )
       ),
       
-      shiny::column(
-        8,
-        shiny::wellPanel(
-          
-          shiny::h4("Resumen del diseño"),
-          
-          shiny::verbatimTextOutput(ns("log")),
-          
-          shiny::tableOutput(ns("summary"))
-        )
-      )
+     shiny::column(
+  8,
+  shiny::wellPanel(
+    
+    shiny::h4("Resumen del diseño"),
+    
+    shiny::verbatimTextOutput(ns("log")),
+    
+    shiny::h4("Código del diseño en R"),
+    shiny::verbatimTextOutput(ns("design_code")),
+    
+    shiny::h4("Resumen del diseño"),
+    shiny::tableOutput(ns("summary"))
+    
+  )
+)
     )
   )
 }

@@ -1,62 +1,15 @@
-mod_diseno_server <- function(id, data) {
+mod_diseno_server <- function(id, data){
   
-  shiny::moduleServer(id, function(input, output, session) {
+  shiny::moduleServer(id, function(input, output, session){
     
     ns <- session$ns
     
-    output$design_arguments <- shiny::renderUI({
-   
-      shiny::req(input$design_type)
-      req(data())
-      
-      vars <- names(data())
-      
-      switch(
-        input$design_type,
-        
-        "srs" = tagList(
-          selectInput(ns("weight_var"),
-                      "Peso muestral (opcional)",
-                      choices = vars)
-        ),
-        
-        "stratified" = tagList(
-          selectInput(ns("strata_var"),
-                      "Variable de estrato",
-                      choices = vars),
-          
-          selectInput(ns("weight_var"),
-                      "Peso muestral",
-                      choices = vars)
-        ),
-        
-        "cluster" = tagList(
-          selectInput(ns("cluster_var"),
-                      "UPM / Conglomerado",
-                      choices = vars),
-          
-          selectInput(ns("weight_var"),
-                      "Peso muestral",
-                      choices = vars)
-        ),
-        
-        "two_stage" = tagList(
-          selectInput(ns("cluster_var"),
-                      "UPM (primera etapa)",
-                      choices = vars),
-          
-          selectInput(ns("strata_var"),
-                      "Estrato",
-                      choices = vars),
-          
-          selectInput(ns("weight_var"),
-                      "Peso muestral",
-                      choices = vars)
-        )
-      )
-    })
     
-    output$design_theory <- renderUI({
+    # -------------------------------------------------
+    # Teoría del diseño
+    # -------------------------------------------------
+    
+    output$design_theory <- shiny::renderUI({
       
       req(input$design_type)
       
@@ -64,23 +17,33 @@ mod_diseno_server <- function(id, data) {
         
         input$design_type,
         
+        
         "srs" = tagList(
           
           withMathJax(),
           
-          h5("Fundamento estadístico"),
+          h5("Muestreo Aleatorio Simple (SRS)"),
           
-          p("En el muestreo aleatorio simple cada unidad tiene la misma probabilidad de selección."),
+          p("Cada unidad de la población tiene la misma probabilidad de ser seleccionada."),
           
-          p("Estimador de la media poblacional:"),
+          h6("Estimador de la media poblacional"),
           
-          HTML("$$ \\hat{\\mu} = \\frac{1}{n} \\sum_{i=1}^{n} y_i $$"),
+          HTML("$$ \\hat{\\bar{Y}} = \\frac{1}{n} \\sum_{i=1}^{n} y_i $$"),
           
-          p("Varianza del estimador:"),
+          h6("Varianza del estimador"),
           
-          HTML("$$ Var(\\hat{\\mu}) = \\left(1 - \\frac{n}{N}\\right) \\frac{S^2}{n} $$"),
+          HTML("$$ Var(\\hat{\\bar{Y}}) =
+           \\left(1-\\frac{n}{N}\\right)\\frac{S^2}{n} $$"),
           
-          p("donde \\(S^2\\) es la varianza poblacional.")
+          h6("Definición de los términos"),
+          
+          tags$ul(
+            tags$li(HTML("\\(y_i\\): valor observado de la variable para la unidad i.")),
+            tags$li(HTML("\\(n\\): tamaño de la muestra.")),
+            tags$li(HTML("\\(N\\): tamaño de la población.")),
+            tags$li(HTML("\\(S^2\\): varianza poblacional de la variable de interés.")),
+            tags$li(HTML("\\(\\hat{\\bar{Y}}\\): estimador de la media poblacional."))
+          )
           
         ),
         
@@ -89,21 +52,34 @@ mod_diseno_server <- function(id, data) {
           
           withMathJax(),
           
-          h5("Fundamento estadístico"),
+          h5("Muestreo Estratificado"),
           
-          p("La población se divide en H estratos y el estimador total se obtiene como suma ponderada de los estimadores por estrato."),
+          p("La población se divide en subgrupos homogéneos llamados estratos."),
           
-          p("Estimador de la media estratificada:"),
+          h6("Estimador de la media estratificada"),
           
-          HTML("$$ \\hat{\\mu}_{st} = \\sum_{h=1}^{H} W_h \\bar{y}_h $$"),
+          HTML("$$ \\hat{\\bar{Y}}_{st} =
+           \\sum_{h=1}^{H} W_h \\bar{y}_h $$"),
           
-          p("donde:"),
+          h6("Varianza del estimador"),
           
-          HTML("$$ W_h = \\frac{N_h}{N} $$"),
+          HTML("$$ Var(\\hat{\\bar{Y}}_{st}) =
+           \\sum_{h=1}^{H}
+           W_h^2
+           \\left(1-\\frac{n_h}{N_h}\\right)
+           \\frac{S_h^2}{n_h} $$"),
           
-          p("Varianza del estimador:"),
+          h6("Definición de los términos"),
           
-          HTML("$$ Var(\\hat{\\mu}_{st}) = \\sum_{h=1}^{H} W_h^2 \\left(1 - \\frac{n_h}{N_h}\\right) \\frac{S_h^2}{n_h} $$")
+          tags$ul(
+            tags$li(HTML("\\(H\\): número total de estratos.")),
+            tags$li(HTML("\\(W_h = N_h/N\\): peso poblacional del estrato \\(h\\).")),
+            tags$li(HTML("\\(N_h\\): tamaño poblacional del estrato \\(h\\).")),
+            tags$li(HTML("\\(n_h\\): tamaño de muestra en el estrato \\(h\\).")),
+            tags$li(HTML("\\(\\bar{y}_h\\): media muestral del estrato \\(h\\).")),
+            tags$li(HTML("\\(S_h^2\\): varianza dentro del estrato \\(h\\).")),
+            tags$li(HTML("\\(\\hat{\\bar{Y}}_{st}\\): estimador estratificado de la media poblacional."))
+          )
           
         ),
         
@@ -112,191 +88,417 @@ mod_diseno_server <- function(id, data) {
           
           withMathJax(),
           
-          h5("Fundamento estadístico"),
+          h5("Muestreo por Conglomerados / Multietápico"),
           
-          p("En muestreo por conglomerados se seleccionan grupos de unidades."),
+          p("Las unidades se seleccionan en grupos llamados conglomerados o UPM."),
           
-          p("Estimador del total poblacional:"),
+          h6("Estimador de Horvitz–Thompson"),
           
-          HTML("$$ \\hat{Y} = \\frac{N}{n} \\sum_{i=1}^{n} t_i $$"),
+          HTML("$$ \\hat{Y} =
+           \\sum_{i \\in s}
+           \\frac{y_i}{\\pi_i} $$"),
           
-          p("donde \\(t_i\\) es el total del conglomerado i."),
+          h6("Varianza del estimador"),
           
-          p("Varianza aproximada:"),
+          HTML("$$ Var(\\hat{Y}) =
+           \\sum_i \\sum_j
+           \\left(
+           \\frac{\\pi_{ij}-\\pi_i\\pi_j}{\\pi_{ij}}
+           \\right)
+           \\frac{y_i}{\\pi_i}
+           \\frac{y_j}{\\pi_j} $$"),
           
-          HTML("$$ Var(\\hat{Y}) = \\frac{N^2}{n} S_t^2 $$"),
+          h6("Definición de los términos"),
           
-          p("Este diseño introduce correlación intra-cluster que aumenta la varianza del estimador.")
-          
-        ),
-        
-        
-        "two_stage" = tagList(
-          
-          withMathJax(),
-          
-          h5("Fundamento estadístico"),
-          
-          p("En muestreo bietápico primero se seleccionan UPM y luego unidades dentro de cada UPM."),
-          
-          p("Estimador de Horvitz-Thompson:"),
-          
-          HTML("$$ \\hat{Y} = \\sum_{i \\in s} \\frac{y_i}{\\pi_i} $$"),
-          
-          p("donde \\(\\pi_i\\) es la probabilidad de inclusión."),
-          
-          p("Varianza del estimador:"),
-          
-          HTML("$$ Var(\\hat{Y}) = \\sum_i \\sum_j \\left( \\frac{\\pi_{ij} - \\pi_i \\pi_j}{\\pi_{ij}} \\right) \\frac{y_i}{\\pi_i} \\frac{y_j}{\\pi_j} $$")
+          tags$ul(
+            tags$li(HTML("\\(y_i\\): valor observado para la unidad \\(i\\).")),
+            tags$li(HTML("\\(s\\): conjunto de unidades seleccionadas en la muestra.")),
+            tags$li(HTML("\\(\\pi_i\\): probabilidad de inclusión de la unidad \\(i\\).")),
+            tags$li(HTML("\\(\\pi_{ij}\\): probabilidad conjunta de inclusión de las unidades \\(i\\) y \\(j\\).")),
+            tags$li(HTML("\\(1/\\pi_i\\): peso muestral de la unidad \\(i\\).")),
+            tags$li(HTML("\\(\\hat{Y}\\): estimador del total poblacional."))
+          )
           
         )
         
       )
     })
-    # =====================================================
-    # 1. Actualizar selectores según la base
-    # =====================================================
     
-    shiny::observeEvent(data(), {
+    # -------------------------------------------------
+    # Argumentos del diseño
+    # -------------------------------------------------
+    
+    output$design_arguments <- shiny::renderUI({
+      
+      req(data())
+      
+      vars <- names(data())
+      
+      switch(
+        
+        input$design_type,
+        
+        
+        "srs" = tagList(
+          
+          selectInput(
+            ns("weight_var"),
+            "Peso muestral",
+            choices = vars
+          )
+          
+        ),
+        
+        
+        "stratified" = tagList(
+          
+          selectInput(
+            ns("strata_var"),
+            "Variable de estrato",
+            choices = vars
+          ),
+          
+          selectInput(
+            ns("weight_var"),
+            "Peso muestral",
+            choices = vars
+          )
+          
+        ),
+        
+        
+        "cluster" = tagList(
+          
+          numericInput(
+            ns("n_stages"),
+            "Número de etapas",
+            value = 2,
+            min = 1,
+            max = 5
+          ),
+          
+          uiOutput(ns("stage_clusters")),
+          
+          selectInput(
+            ns("strata_var"),
+            "Estrato",
+            choices = c("Ninguno" = "", vars)
+          ),
+          
+          selectInput(
+            ns("weight_var"),
+            "Peso muestral",
+            choices = vars
+          ),
+          
+          selectInput(
+            ns("lonely_psu"),
+            "Estrategia último conglomerado",
+            choices = c(
+              "Ajuste conservador" = "adjust",
+              "Promedio del estrato" = "average",
+              "Eliminar estrato" = "remove",
+              "Certidumbre" = "certainty"
+            ),
+            selected = "adjust"
+          )
+          
+        )
+        
+      )
+    })
+    
+    
+    
+    # -------------------------------------------------
+    # Generar etapas dinámicas
+    # -------------------------------------------------
+    
+    output$stage_clusters <- shiny::renderUI({
+      
+      req(input$n_stages)
+      req(data())
+      
+      vars <- names(data())
+      
+      lapply(
+        seq_len(input$n_stages),
+        function(i){
+          
+          selectInput(
+            ns(paste0("cluster_stage_", i)),
+            paste("Conglomerado etapa", i),
+            choices = vars
+          )
+          
+        }
+      )
+      
+    })
+    
+    
+    
+    # -------------------------------------------------
+    # Función limpieza
+    # -------------------------------------------------
+    
+    clean_input <- function(x){
+      
+      if(is.null(x) || x == "") return(NULL)
+      x
+      
+    }
+    
+    
+    # -------------------------------------------------
+    # Construcción del diseño
+    # -------------------------------------------------
+    
+    design_r <- shiny::eventReactive(input$build,{
       
       df <- data()
-      shiny::req(df)
+      req(df)
       
-      vars <- names(df)
+      weight <- input$weight_var
       
-      shiny::updateSelectInput(
-        session, "weight_var",
-        choices = vars,
-        selected = vars[1]
-      )
       
-      shiny::updateSelectInput(
-        session, "strata_var",
-        choices = c("Ninguno" = "", vars)
-      )
+      if(input$design_type == "srs"){
+        
+        des <- survey::svydesign(
+          id = ~1,
+          weights = as.formula(paste("~",weight)),
+          data = df
+        )
+        
+      }
       
-      shiny::updateSelectInput(
-        session, "cluster_var",
-        choices = c("Ninguno" = "", vars)
-      )
+      
+      if(input$design_type == "stratified"){
+        
+        strata <- input$strata_var
+        
+        des <- survey::svydesign(
+          id = ~1,
+          strata = as.formula(paste("~",strata)),
+          weights = as.formula(paste("~",weight)),
+          data = df
+        )
+        
+      }
+      
+      
+      if(input$design_type == "cluster"){
+        
+        clusters <- sapply(
+          seq_len(input$n_stages),
+          function(i)
+            input[[paste0("cluster_stage_",i)]]
+        )
+        
+        id_formula <- as.formula(
+          paste("~",paste(clusters,collapse="+"))
+        )
+        
+        strata <- clean_input(input$strata_var)
+        
+        options(
+          survey.lonely.psu = input$lonely_psu
+        )
+        
+        des <- survey::svydesign(
+          id = id_formula,
+          strata = if(!is.null(strata))
+            as.formula(paste("~",strata))
+          else NULL,
+          weights = as.formula(paste("~",weight)),
+          data = df,
+          nest = TRUE
+        )
+        
+      }
+      
+      
+      srvyr::as_survey_design(des)
+      
+    })
+    
+    
+    
+    # -------------------------------------------------
+    # Log reactivo
+    # -------------------------------------------------
+    
+    log_design <- reactiveVal(NULL)
+    
+    observeEvent(input$design_type,{
+      
+      log_design(NULL)
       
     }, ignoreInit = TRUE)
     
     
-    clean_input <- function(x){
-      if (is.null(x) || length(x) == 0 || x == "") return(NULL)
-      x
-    }
     
-    # =====================================================
-    # 2. Construcción del diseño
-    # =====================================================
+    # -------------------------------------------------
+    # Construcción del diseño
+    # -------------------------------------------------
     
-    design_r <- shiny::eventReactive(input$build, {
+    design_r <- eventReactive(input$build,{
+      
       df <- data()
-      shiny::req(df)
-      shiny::req(input$design_type)
+      req(df)
       
-      weight  <- input$weight_var
-      strata  <- clean_input(input$strata_var)
-      cluster <- clean_input(input$cluster_var)
+      weight <- input$weight_var
       
-      des <- switch(
+      if(input$design_type == "srs"){
         
-        input$design_type,
+        des <- survey::svydesign(
+          id = ~1,
+          weights = as.formula(paste("~", weight)),
+          data = df
+        )
         
-        "srs" = {
-          build_survey_design(
-            data   = df,
-            weight = weight
-          )
-        },
+        formula_design <- paste0(
+          "svydesign(\n",
+          "  id = ~1,\n",
+          "  weights = ~", weight, ",\n",
+          "  data = data\n",
+          ")"
+        )
         
-        "stratified" = {
-          shiny::req(strata)
-          build_survey_design(
-            data   = df,
-            weight = weight,
-            strata = strata
-          )
-        },
+      }
+      
+      
+      if(input$design_type == "stratified"){
         
-        "cluster" = {
-          shiny::req(cluster)
-          build_survey_design(
-            data    = df,
-            weight  = weight,
-            cluster = cluster
-          )
-        },
+        strata <- input$strata_var
         
-        "two_stage" = {
-          shiny::req(cluster)
-          build_survey_design(
-            data    = df,
-            weight  = weight,
-            strata  = strata,
-            cluster = cluster
-          )
-        }
+        des <- survey::svydesign(
+          id = ~1,
+          strata = as.formula(paste("~", strata)),
+          weights = as.formula(paste("~", weight)),
+          data = df
+        )
         
+        formula_design <- paste0(
+          "svydesign(\n",
+          "  id = ~1,\n",
+          "  strata = ~", strata, ",\n",
+          "  weights = ~", weight, ",\n",
+          "  data = data\n",
+          ")"
+        )
+        
+      }
+      
+      
+      if(input$design_type == "cluster"){
+        
+        clusters <- sapply(
+          seq_len(input$n_stages),
+          function(i)
+            input[[paste0("cluster_stage_", i)]]
+        )
+        
+        id_formula <- as.formula(
+          paste("~", paste(clusters, collapse = "+"))
+        )
+        
+        strata <- clean_input(input$strata_var)
+        
+        options(
+          survey.lonely.psu = input$lonely_psu
+        )
+        
+        des <- survey::svydesign(
+          id = id_formula,
+          strata = if(!is.null(strata))
+            as.formula(paste("~", strata))
+          else NULL,
+          weights = as.formula(paste("~", weight)),
+          data = df,
+          nest = TRUE
+        )
+        
+        formula_design <- paste0(
+          "svydesign(\n",
+          "  id = ~", paste(clusters, collapse = " + "), ",\n",
+          if(!is.null(strata)) paste0("  strata = ~", strata, ",\n") else "",
+          "  weights = ~", weight, ",\n",
+          "  nest = TRUE,\n",
+          "  data = data\n",
+          ")"
+        )
+        
+      }
+      
+      
+      log_design(
+        list(
+          tipo = input$design_type,
+          formula_R = formula_design,
+          etapas = input$n_stages,
+          lonely_psu = input$lonely_psu
+        )
       )
       
       srvyr::as_survey_design(des)
       
-    }, ignoreInit = TRUE)
+    })
     
     
-    # =====================================================
-    # 3. Log del diseño
-    # =====================================================
     
-    output$log <- shiny::renderPrint({
+    # -------------------------------------------------
+    # Código del diseño
+    # -------------------------------------------------
+    
+    output$design_code <- renderText({
       
-      shiny::req(input$design_type)
+      req(log_design())
       
-      tipo <- dplyr::case_when(
-        input$design_type == "srs"        ~ "Muestreo Aleatorio Simple",
-        input$design_type == "stratified" ~ "Diseño Estratificado",
-        input$design_type == "cluster"    ~ "Diseño por Conglomerados",
-        input$design_type == "two_stage"  ~ "Diseño Bietápico"
-      )
-      
-      list(
-        tipo_disenio = tipo,
-        peso         = input$weight_var,
-        estrato      = input$strata_var,
-        upm          = input$cluster_var
-      )
+      log_design()$formula_R
       
     })
     
     
-    # =====================================================
-    # 4. Resumen del diseño
-    # =====================================================
     
-    output$summary <- shiny::renderTable({
+    # -------------------------------------------------
+    # Log
+    # -------------------------------------------------
+    
+    output$log <- renderPrint({
       
-      shiny::req(design_r())
-      
-      describe_survey_design(
-        design_r()
-      )
+      log_design()
       
     })
     
     
-    # =====================================================
-    # 5. Salida del módulo
-    # =====================================================
+    
+    # -------------------------------------------------
+    # Resumen del diseño
+    # -------------------------------------------------
+    
+    output$summary <- renderTable({
+      
+      req(design_r())
+      
+      describe_survey_design(design_r())
+      
+    })
+    
+    # -------------------------------------------------
+    # Salida del módulo
+    # -------------------------------------------------
     
     return(
+      
       list(
-        design = shiny::reactive({
+        
+        design = shiny::reactive(
           design_r()
-        })
+        )
+        
       )
+      
     )
     
   })

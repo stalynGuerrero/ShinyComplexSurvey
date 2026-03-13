@@ -29,9 +29,9 @@ $$
 donde:
 
 <ul>
-<li>$w_i = 1/\\pi_i$ es el peso de expansión</li>
-<li>$\\pi_i$ es la probabilidad de inclusión</li>
-<li>$y_i$ es la variable de interés</li>
+<li>\\(w_i = 1/\\pi_i\\) es el peso de expansión</li>
+<li>\\(\\pi_i\\) es la probabilidad de inclusión</li>
+<li>\\(y_i\\) es la variable de interés</li>
 </ul>
 
 Este estimador puede interpretarse como el estimador de Horvitz–Thompson del total dividido por el tamaño poblacional estimado.
@@ -79,8 +79,8 @@ $$
 donde:
 
 <ul>
-<li>$w_i = 1/\\pi_i$ es el peso de expansión</li>
-<li>$\\pi_i$ es la probabilidad de inclusión</li>
+<li>\\(w_i = 1/\\pi_i\\) es el peso de expansión</li>
+<li>\\(\\pi_i\\) es la probabilidad de inclusión</li>
 </ul>
 
 Bajo muestreo estratificado:
@@ -134,7 +134,8 @@ La varianza se aproxima mediante linearización de Taylor.
 
 <b>Estimador de razón</b><br><br>
 
-El estimador de razón compara dos totales poblacionales:
+El estimador de razón compara dos totales poblacionales estimados
+a partir de una muestra con pesos de expansión.
 
 $$
 \\hat{R} =
@@ -145,16 +146,34 @@ $$
 donde:
 
 <ul>
-<li>$w_i$ son los pesos de expansión</li>
-<li>$y_i$ es la variable del numerador</li>
-<li>$x_i$ es la variable del denominador</li>
+<li>\\(w_i\\) es el peso de expansión</li>
+<li>\\(y_i\\) es la variable del numerador</li>
+<li>\\(x_i\\) es la variable del denominador</li>
+<li>\\(s\\) representa el conjunto de unidades de la muestra</li>
 </ul>
 
-Este estimador es <b>no lineal</b> y su varianza se aproxima mediante linearización.
+<br>
+
+<b>Relación con los estimadores de Horvitz–Thompson</b>
+
+$$
+\\hat{R} = \\frac{\\hat{Y}}{\\hat{X}}
+$$
+
+con
+
+$$
+\\hat{Y} = \\sum_{i \\in s} w_i y_i
+\\qquad
+\\hat{X} = \\sum_{i \\in s} w_i x_i
+$$
 
 <br>
 
 <b>Varianza aproximada</b>
+
+El estimador es no lineal, por lo que su varianza se aproxima mediante
+linearización de Taylor:
 
 $$
 \\widehat{Var}(\\hat{R}) \\approx
@@ -162,20 +181,91 @@ $$
 \\widehat{Var}(\\hat{Y} - \\hat{R}\\hat{X})
 $$
 
-donde
+<br>
+
+<b>Casos particulares utilizados en la aplicación</b>
+
+<br>
+
+<b>1. Razón entre categorías</b><br>
+Ejemplo: proporción de hombres respecto a mujeres.
+
+Sea
 
 $$
-\\hat{Y} = \\sum w_i y_i
-\\quad
-\\hat{X} = \\sum w_i x_i
+y_i = I(\\text{hombre})
+\\qquad
+x_i = I(\\text{mujer})
 $$
+
+donde \\(I(\\cdot)\\) es una función indicadora.
+
+El estimador es:
+
+$$
+\\hat{R} =
+\\frac{\\sum w_i I(\\text{hombre})}
+     {\\sum w_i I(\\text{mujer})}
+$$
+
+Este tipo de razón se utiliza para comparar tamaños relativos
+entre grupos poblacionales.
+
+<br>
+
+<b>2. Variable continua sobre categoría</b><br>
+Ejemplo: ingreso promedio de los hombres.
+
+Sea
+
+$$
+y_i = ingreso_i
+\\qquad
+x_i = I(\\text{hombre})
+$$
+
+entonces
+
+$$
+\\hat{R} =
+\\frac{\\sum w_i ingreso_i}
+     {\\sum w_i I(\\text{hombre})}
+$$
+
+Este estimador corresponde al promedio ponderado del ingreso
+en la subpoblación de hombres.
+
+<br>
+
+<b>3. Razón entre variables continuas</b><br>
+Ejemplo: relación ingreso / gasto.
+
+Sea
+
+$$
+y_i = ingreso_i
+\\qquad
+x_i = gasto_i
+$$
+
+entonces
+
+$$
+\\hat{R} =
+\\frac{\\sum w_i ingreso_i}
+     {\\sum w_i gasto_i}
+$$
+
+Este tipo de razón se utiliza para analizar relaciones económicas
+entre variables agregadas.
 
 <br>
 
 <b>Interpretación</b>
 
-El estimador de razón se utiliza cuando existe correlación entre $Y$ y $X$,
-lo que puede reducir la varianza del estimador.
+El estimador de razón es especialmente eficiente cuando existe
+una fuerte correlación entre \\(Y\\) y \\(X\\), ya que el denominador
+actúa como variable auxiliar reduciendo la varianza del estimador.
 
 ",
         
@@ -193,7 +283,7 @@ F_w(y) =
 \\frac{\\sum w_i I(Y_i \\le y)}{\\sum w_i}
 $$
 
-El cuantil $q_p$ satisface:
+El cuantil \\(q_p\\) satisface:
 
 $$
 F_w(q_p) = p
