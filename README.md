@@ -35,34 +35,24 @@ Para usar `ShinyComplexSurvey`, sigue estos sencillos pasos:
 
 3. **Explorar y Analizar**: Utiliza las diferentes pestañas de la interfaz para realizar análisis descriptivos, numéricos y gráficos.
 
-## Requisitos y Paquetes de R
+## Requisitos e instalación
 
-Para ejecutar esta aplicación, necesitarás instalar los siguientes paquetes de R. 
-Puedes hacerlo ejecutando este código en tu consola de R:
+`ShinyComplexSurvey` requiere R >= 4.1.0 y las dependencias definidas en el
+paquete (`dplyr`, `tibble`, `tidyr`, `readr`, `readxl`, `haven`, `stringr`,
+`rlang`, `purrr`, `shiny`, `DT`, `srvyr`, `survey`, `magrittr`, `ggplot2`,
+entre otras de base).  
 
-`library(shiny)`
+La forma recomendada de instalar dependencias es:
 
-`library(tidyverse)`
+```r
+install.packages("pak")
+pak::pak(".")
+```
 
-`library(DT)`
+## Ejecutar la aplicación
 
-`library(glue)`
+Una vez instalado el paquete, puedes iniciar la app con:
 
-`library(scales)`
-
-`library(plotly)`
-
-`library(bslib)`
-
-`library(shinyWidgets)`
-
-`library(shinyjs)`
-
-`library(shinydashboard)`
-
-`library(shinythemes)`
-
-`library(esquisse)`
-
-Una vez que tengas todos los paquetes instalados, puedes ejecutar la aplicación 
-directamente desde el archivo `app.R.`
+```r
+ShinyComplexSurvey::run_shiny()
+```

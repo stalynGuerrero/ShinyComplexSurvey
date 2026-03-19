@@ -23,6 +23,7 @@ Depends:
 Imports:
     dplyr,
     tibble,
+    tidyr,
     readr,
     readxl,
     haven,
