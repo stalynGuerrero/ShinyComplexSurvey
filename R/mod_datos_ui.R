@@ -3,42 +3,32 @@ mod_datos_ui <- function(id) {
   
   shiny::fluidPage(
     
-    shiny::h3("Carga y validacion de datos"),
+    shiny::h3(shiny::textOutput(ns("title"))),
     shiny::hr(),
     
     shiny::fluidRow(
       
-      # =========================
-      # Columna izquierda
-      # =========================
       shiny::column(
         4,
         shiny::wellPanel(
-          shiny::h4("Entrada de datos"),
+          shiny::h4(shiny::textOutput(ns("input_panel"))),
           
-          shiny::fileInput(
-            ns("file"),
-            "Archivo de datos",
-            accept = c(".csv", ".rds", ".xlsx")
-          ),
+          shiny::uiOutput(ns("file_ui")),
           
           shiny::hr(),
           
           shiny::actionButton(
             ns("load_example"),
-            "Cargar datos de ejemplo",
+            label = NULL,
             class = "btn-primary"
           )
         )
       ),
       
-      # =========================
-      # Columna derecha
-      # =========================
       shiny::column(
         8,
         shiny::wellPanel(
-          shiny::h4("Vista previa"),
+          shiny::h4(shiny::textOutput(ns("preview"))),
           
           DT::DTOutput(ns("preview")),
           shiny::hr(),

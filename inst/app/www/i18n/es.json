@@ -1,0 +1,17 @@
+{
+  "mod_datos": {
+    "title": "Carga y validación de datos",
+    "input_panel": "Entrada de datos",
+    "file_label": "Archivo de datos",
+    "example_btn": "Cargar datos de ejemplo",
+    "preview": "Vista previa",
+    "log": "Registro"
+  },
+  "app": {
+    "tabs": {
+      "datos": "Datos",
+      "diseno": "Diseño muestral",
+      "estimacion": "Estimación"
+    }
+  }
+}

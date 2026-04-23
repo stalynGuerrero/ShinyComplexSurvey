@@ -15,6 +15,15 @@ body {
 /* =========================
    Navbar
 ========================= */
+.navbar .selectize-control {
+  margin-bottom: 0;
+}
+
+.navbar .selectize-input {
+  height: 30px;
+  min-height: 30px;
+  padding: 4px 8px;
+}
 
 .navbar {
   background-color: #1f2933;

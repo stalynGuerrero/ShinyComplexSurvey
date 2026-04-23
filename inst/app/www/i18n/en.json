@@ -1,0 +1,17 @@
+{
+  "mod_datos": {
+    "title": "Data loading and validation",
+    "input_panel": "Data input",
+    "file_label": "Data file",
+    "example_btn": "Load example data",
+    "preview": "Preview",
+    "log": "Log"
+  },
+  "app": {
+    "tabs": {
+      "datos": "Data",
+      "diseno": "Survey design",
+      "estimacion": "Estimation"
+    }
+  }
+}

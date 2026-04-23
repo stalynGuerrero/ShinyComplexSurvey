@@ -5,6 +5,7 @@ test_that("format_results_table returns formatted tibble", {
     estimator = "mean",
     estimate = 10.1234,
     se = 1.234,
+    cv = 0.12,
     lci = 8.1,
     uci = 12.9,
     conf_level = 0.95,

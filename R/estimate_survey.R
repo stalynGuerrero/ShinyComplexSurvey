@@ -1,6 +1,6 @@
 #' Estimate survey statistics under complex sampling designs
 #'
-#' Computes classical design-based estimators for complex surveys using
+#' Computes design-based estimators for complex survey data using
 #' sampling weights, stratification and clustering. The function operates
 #' on objects of class \code{tbl_svy} and supports estimation by domains
 #' (subpopulations) defined by one or more grouping variables.
@@ -12,107 +12,141 @@
 #'   \item \strong{Total} (\code{"total"}): weighted population total
 #'         (Horvitz--Thompson estimator).
 #'   \item \strong{Proportion} (\code{"prop"}): weighted proportions for
-#'         binary variables or category-wise proportions for categorical variables.
+#'         binary or categorical variables.
 #'   \item \strong{Ratio} (\code{"ratio"}): ratio of two population totals.
-#'   \item \strong{Quantile} (\code{"quantile"}): weighted quantiles
-#'         (e.g. median, quartiles).
+#'   \item \strong{Quantile} (\code{"quantile"}): weighted quantiles.
 #' }
 #'
 #' All estimators account for the complex sampling design. Variance estimation
-#' is carried out using first-order Taylor linearization, as implemented in
-#' the \pkg{survey} and \pkg{srvyr} packages.
+#' is based on Taylor linearization or the methods implemented in the
+#' \pkg{survey} package.
 #'
 #' @param design A \code{tbl_svy} object created with
-#'   \code{build_survey_design()}, containing the full survey design
-#'   (weights, strata and clusters).
+#'   \code{as_survey_design_tbl()}, containing weights, strata and clusters.
 #'
 #' @param variable Character string indicating the variable of interest.
 #'   Required for \code{"mean"}, \code{"total"}, \code{"prop"} and
-#'   \code{"quantile"}. Not used for \code{"ratio"}.
+#'   \code{"quantile"}. Ignored when \code{estimator = "ratio"}.
 #'
-#' @param estimator Character string specifying the estimator to compute.
+#' @param estimator Character string specifying the estimator.
 #'   One of \code{"mean"}, \code{"total"}, \code{"prop"}, \code{"ratio"},
 #'   or \code{"quantile"}.
 #'
-#' @param by Optional character vector specifying domain variables.
-#'   If \code{NULL}, the estimator is computed for the entire population.
-#'   If provided, estimates are produced independently for each domain
-#'   or interaction of domains.
+#' @param by Optional character vector of domain variables.
 #'
-#' @param na_rm Logical. Whether missing values should be removed prior
-#'   to estimation. Defaults to \code{TRUE}.
+#' @param na_rm Logical. Whether to remove missing values. Default is \code{TRUE}.
 #'
 #' @param conf_level Confidence level for interval estimation.
-#'   Defaults to \code{0.95}.
 #'
-#' @param numerator Character string indicating the numerator variable
-#'   for the \code{"ratio"} estimator.
+#' @param numerator Character string for numerator variable in ratio estimation.
 #'
-#' @param denominator Character string indicating the denominator variable
-#'   for the \code{"ratio"} estimator.
+#' @param denominator Character string for denominator variable in ratio estimation.
 #'
-#' @param probs Numeric vector of probabilities in the open interval (0, 1)
-#'   indicating the quantiles to be estimated when
-#'   \code{estimator = "quantile"}.
+#' @param ratio_num_level Character. Category used as numerator when the numerator
+#'   variable is categorical.
+#'
+#' @param ratio_den_level Character. Category used as denominator when the denominator
+#'   variable is categorical.
+#'
+#' @param probs Numeric vector of probabilities in (0,1) for quantiles.
 #'
 #' @details
-#' \strong{Mean.}
-#' The weighted population mean of a variable Y is estimated as the ratio
-#' of the weighted sum of Y to the sum of sampling weights, that is,
-#' sum(w_i * y_i) divided by sum(w_i), where w_i denotes the sampling weight
-#' of unit i. The variance is approximated by Taylor linearization, treating
-#' the mean as a ratio estimator.
 #'
-#' \strong{Total.}
-#' The population total is estimated using the Horvitz--Thompson estimator,
-#' defined as the sum over the sample of w_i * y_i. Variance estimation
-#' follows standard linearization methods under the specified design.
+#' \strong{Mean}
 #'
-#' \strong{Proportions.}
-#' For binary variables, proportions are estimated as weighted means of
-#' indicator variables. For categorical variables with more than two levels,
-#' category-specific indicator variables are constructed and proportions
-#' are estimated separately for each category. Variances are obtained
-#' via linearization of the corresponding mean estimators.
+#' The population mean is estimated as:
 #'
-#' \strong{Ratios.}
-#' Ratios are defined as the ratio of two population totals, namely
-#' sum(w_i * y_i) divided by sum(w_i * x_i), where Y is the numerator
-#' and X the denominator variable. Variance estimation is based on
-#' first-order Taylor linearization of the ratio estimator and is implemented
-#' through \code{survey::svyratio()}.
-#'
-#' \strong{Quantiles.}
-#' Quantiles are estimated from the weighted empirical distribution function.
-#' The p-th quantile is defined as the smallest value q such that the weighted
-#' cumulative distribution function evaluated at q is greater than or equal
-#' to p. Variance and confidence intervals are obtained via linearization
-#' methods as implemented in \code{survey::svyquantile()}.
-#'
-#' \strong{Domain estimation.}
-#' When domain variables are supplied, all estimators are computed independently
-#' within each domain. Variance estimation is carried out conditionally on the
-#' domain, following standard design-based practice.
-#'
-#' \strong{Confidence intervals.}
-#' Confidence intervals are constructed using a Normal approximation of the form
-#' estimate plus or minus z times the standard error, where z corresponds to
-#' the specified confidence level.
-#'
-#' @return
-#' A tibble containing the point estimate and associated quality measures.
-#' Depending on the estimator, the output includes:
-#'
-#' \itemize{
-#'   \item \code{estimate}: point estimate.
-#'   \item \code{se}: standard error.
-#'   \item \code{cv}: coefficient of variation.
-#'   \item \code{lci}: lower confidence interval.
-#'   \item \code{uci}: upper confidence interval.
+#' \deqn{
+#' \hat{\bar{X}} = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
 #' }
 #'
-#' Additional columns identify the variable, estimator type, domain variables,
-#' and, when applicable, categories or quantile levels.
+#' where \eqn{w_i} are sampling weights and \eqn{y_i} the observed values.
+#'
+#' \strong{Total}
+#'
+#' The population total is estimated using the Horvitz--Thompson estimator:
+#'
+#' \deqn{
+#' \hat{T} = \sum_{i \in s} w_i y_i
+#' }
+#'
+#'
+#' \strong{Proportions}
+#'
+#' For binary variables:
+#'
+#' \deqn{
+#' \hat{P} = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
+#' }
+#'
+#' where \eqn{y_i \in \{0,1\}}.
+#'
+#' For categorical variables, proportions are computed by defining indicator
+#' variables:
+#'
+#' \deqn{
+#' I(y_i = k)
+#' }
+#'
+#' and estimating each category separately.
+#'
+#' \strong{Ratios}
+#'
+#' The ratio estimator is defined as:
+#'
+#' \deqn{
+#' \hat{R} = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i x_i}
+#' }
+#'
+#' When variables are categorical, indicator variables are constructed
+#' for the specified categories.
+#'
+#' Variance estimation is based on first-order Taylor linearization using
+#' \code{survey::svyratio()}.
+#'
+#' \strong{Quantiles}
+#'
+#' Quantiles are defined from the weighted empirical distribution function:
+#'
+#' \deqn{
+#' \hat{F}(q) = \frac{\sum_{i \in s} w_i I(y_i \leq q)}{\sum_{i \in s} w_i}
+#' }
+#'
+#' The \eqn{p}-th quantile is the smallest \eqn{q} such that:
+#'
+#' \deqn{
+#' \hat{F}(q) \geq p
+#' }
+#'
+#'
+#' \strong{Domain estimation}
+#'
+#' Estimation is performed within domains defined by \code{by}. Variance
+#' estimation accounts for the complex design structure within each domain.
+#'
+#' \strong{Confidence intervals}
+#'
+#' Confidence intervals are constructed as:
+#'
+#' \deqn{
+#' \hat{\theta} \pm z_{1-\alpha/2} \cdot SE(\hat{\theta})
+#' }
+#'
+#' assuming asymptotic normality.
+#'
+#' @return
+#' A tibble containing:
+#'
+#' \itemize{
+#'   \item \code{estimate}: point estimate
+#'   \item \code{se}: standard error
+#'   \item \code{cv}: coefficient of variation
+#'   \item \code{deff}: design effect
+#'   \item \code{lci}: lower confidence interval
+#'   \item \code{uci}: upper confidence interval
+#' }
+#'
+#' Additional columns identify domains, variables and estimator type.
 #'
 #' @seealso
 #' \code{\link[srvyr]{survey_mean}},
@@ -120,25 +154,108 @@
 #' \code{\link[survey]{svyratio}},
 #' \code{\link[survey]{svyquantile}}
 #'
+#' @examples
+#' # ---------------------------------------------------------
+#' # Generate example data
+#' # ---------------------------------------------------------
+#' data <- generate_example_data(n_upm = 30, seed = 123)
+#'
+#' # Build survey design
+#' design <- srvyr::as_survey_design(
+#'   data,
+#'   ids = upm,
+#'   strata = strata,
+#'   weights = weight
+#' )
+#'
+#' # ---------------------------------------------------------
+#' # Mean estimation
+#' # ---------------------------------------------------------
+#' estimate_survey(
+#'   design,
+#'   variable = "ingreso_pc",
+#'   estimator = "mean"
+#' )
+#'
+#' # By domain
+#' estimate_survey(
+#'   design,
+#'   variable = "ingreso_pc",
+#'   estimator = "mean",
+#'   by = "region"
+#' )
+#'
+#' # ---------------------------------------------------------
+#' # Total estimation
+#' # ---------------------------------------------------------
+#' estimate_survey(
+#'   design,
+#'   variable = "ingreso_pc",
+#'   estimator = "total"
+#' )
+#'
+#' # ---------------------------------------------------------
+#' # Proportion (binary)
+#' # ---------------------------------------------------------
+#' estimate_survey(
+#'   design,
+#'   variable = "pobre",
+#'   estimator = "prop"
+#' )
+#'
+#' # Proportion (categorical)
+#' estimate_survey(
+#'   design,
+#'   variable = "empleo",
+#'   estimator = "prop"
+#' )
+#'
+#' # ---------------------------------------------------------
+#' # Ratio estimation (numeric)
+#' # ---------------------------------------------------------
+#' estimate_survey(
+#'   design,
+#'   estimator = "ratio",
+#'   numerator = "ingreso_pc",
+#'   denominator = "gasto_pc"
+#' )
+#'
+#' # Ratio with domains
+#' estimate_survey(
+#'   design,
+#'   estimator = "ratio",
+#'   numerator = "ingreso_pc",
+#'   denominator = "gasto_pc",
+#'   by = "region"
+#' )
+#'
+#' # ---------------------------------------------------------
+#' # Ratio (categorical vs categorical)
+#' # Example: proportion of Formal vs Informal
+#' # ---------------------------------------------------------
+#' estimate_survey(
+#'   design,
+#'   estimator = "ratio",
+#'   numerator = "empleo",
+#'   denominator = "empleo",
+#'   ratio_num_level = "Formal",
+#'   ratio_den_level = "Informal"
+#' )
+#'
+#' # ---------------------------------------------------------
+#' # Quantiles
+#' # ---------------------------------------------------------
+#' estimate_survey(
+#'   design,
+#'   variable = "ingreso_pc",
+#'   estimator = "quantile",
+#'   probs = c(0.25, 0.5, 0.75)
+#' )
+#'
 #' @references
-#' Cochran, W. G. (1977).
-#' \emph{Sampling Techniques} (3rd ed.).
-#' Wiley.
-#'
-#' Särndal, C.-E., Swensson, B., & Wretman, J. (1992).
-#' \emph{Model Assisted Survey Sampling}.
-#' Springer.
-#'
-#' Lohr, S. (2019).
-#' \emph{Sampling: Design and Analysis} (2nd ed.).
-#' CRC Press.
-#'
-#' Lumley, T. (2010).
-#' \emph{Complex Surveys: A Guide to Analysis Using R}.
-#' Wiley.
+#' Cochran (1977); Särndal et al. (1992); Lohr (2019); Lumley (2010)
 #'
 #' @export
-
 
 
 
@@ -199,8 +316,6 @@ estimate_survey <- function(
     subset(svy, eval(cond, svy$variables, parent.frame()))
   }
   
-  svy_obj <- srvyr::as_survey_design(design)
-  
   # ==========================================================
   # MEAN / TOTAL / PROP
   # ==========================================================
@@ -247,24 +362,26 @@ estimate_survey <- function(
         )
       
     } else {
-      
+
       uniq <- unique(stats::na.omit(var_data))
-      
-      if (is.logical(var_data) || length(uniq) == 2) {
-        
+      is_binary <- is.logical(var_data) ||
+        (is.numeric(var_data) && all(uniq %in% c(0, 1)))
+
+      if (is_binary) {
+
         res <- design_grp %>%
           srvyr::summarise(
             estimate = srvyr::survey_mean(
               !!var_sym, vartype = c("se", "cv"), na.rm = na_rm, deff = TRUE
             )
           )
-        
+
       } else {
-        
+
         levs <- levels(as.factor(var_data))
-        
+
         res <- purrr::map_dfr(levs, function(lv) {
-          
+
           tmp <- design_grp %>%
             dplyr::mutate(.ind = (!!var_sym) == lv) %>%
             srvyr::summarise(
@@ -272,7 +389,7 @@ estimate_survey <- function(
                 .ind, vartype = c("se", "cv"), na.rm = na_rm, deff = TRUE
               )
             )
-          
+
           tmp[[variable]] <- lv
           tmp
         })
@@ -379,13 +496,13 @@ estimate_survey <- function(
     keys <- domain_keys(design$variables, by)
     
     if (is.null(keys)) {
-      res <- compute_ratio(svy_obj)
+      res <- compute_ratio(design)
     } else {
       res <- purrr::map_dfr(seq_len(nrow(keys)), function(i) {
         row <- keys[i, , drop = FALSE]
         dplyr::bind_cols(
           row,
-          compute_ratio(subset_design_by_row(svy_obj, by, row))
+          compute_ratio(subset_design_by_row(design, by, row))
         )
       })
     }
@@ -428,20 +545,24 @@ estimate_survey <- function(
       tibble::tibble(
         quantile = probs,
         estimate = qdf[, "quantile"],
-        se = qdf[, "se"],
-        cv = qdf[, "se"] / qdf[, "quantile"],
+        se       = qdf[, "se"],
+        cv       = ifelse(
+          abs(qdf[, "quantile"]) < .Machine$double.eps,
+          NA_real_,
+          qdf[, "se"] / qdf[, "quantile"]
+        ),
         deff = NA_real_
       )
     }
     
     if (is.null(keys)) {
-      res <- compute_quantile(svy_obj)
+      res <- compute_quantile(design)
     } else {
       res <- purrr::map_dfr(seq_len(nrow(keys)), function(i) {
         row <- keys[i, , drop = FALSE]
         dplyr::bind_cols(
           row,
-          compute_quantile(subset_design_by_row(svy_obj, by, row))
+          compute_quantile(subset_design_by_row(design, by, row))
         )
       })
     }
@@ -455,14 +576,15 @@ estimate_survey <- function(
       )
   }
   
-  dplyr::relocate(res, variable, estimator) %>% 
+  dplyr::relocate(res, variable, estimator) %>%
     dplyr::mutate(
-      calidad = dplyr::case_when(
-        cv < 0.05 ~ "Muy alta precisión",
-        cv < 0.10 ~ "Alta precisión",
-        cv < 0.20 ~ "Precisión aceptable",
-        cv < 0.30 ~ "Uso con cautela",
-        TRUE ~ "Baja precisión"
+      quality = dplyr::case_when(
+        is.na(cv)  ~ NA_character_,
+        cv < 0.05  ~ "Very high precision",
+        cv < 0.10  ~ "High precision",
+        cv < 0.20  ~ "Acceptable precision",
+        cv < 0.30  ~ "Use with caution",
+        TRUE       ~ "Low precision"
       )
     )
 }

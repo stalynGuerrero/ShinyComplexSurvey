@@ -3,24 +3,63 @@
 
 utils::globalVariables(c(
   
-  # Common tidy evaluation pronouns
+  # pronouns
   ".data",
   ".ind",
   
-  # Survey design variables
+  # diseño
   "estrato",
   "upm",
+  "strata",
   "w",
   
-  # Sociodemographic variables (example dataset)
+  # IDs jerárquicos
+  "hogar_id",
+  "hogar_id_upm",
+  "persona_id",
+  "persona_id_hogar",
+  
+  # tamaños
+  "n_hogares",
+  "n_personas",
+  
+  # pesos
+  "weight_hogar",
+  "weight",
+  
+  # efectos
+  "upm_effect",
+  "hogar_effect",
+  "estimate_deff",
+  
+  # dominios
   "sexo",
   "region",
   "etnia",
   "dam",
+  "area",
+  
+  # demografía
+  "edad",
+  "educacion",
+  "empleo",
+  
+  # educación derivada
+  "educ_num",
+  "educ_effect",
+  
+  # ingresos
   "ingreso",
+  "ingreso_hogar",
+  "ingreso_pc",
+  "gasto_pc",
+  "ingreso2",
+  
+  # pobreza
+  "pobre",
   "miembros",
   
-  # Estimation outputs
+  # outputs
   "estimate",
   "se",
   "cv",
@@ -32,17 +71,14 @@ utils::globalVariables(c(
   "variable",
   "ic",
   
-  # Ratio-specific variables
+  # ratio
   "ratio_num_level",
-  "ratio_den_level",
-  
-  # Helper variables used inside pipelines
-  "n_distinct"
+  "ratio_den_level"
 ))
 
 # Explicit imports required by R CMD check
 
-#' @importFrom stats coef vcov update weights rlnorm runif
+#' @importFrom stats coef vcov update weights rlnorm runif rbinom rgamma rnorm
 #' @importFrom utils head
 #' @importFrom magrittr %>%
 #' @importFrom dplyr n_distinct

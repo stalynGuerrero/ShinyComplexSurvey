@@ -1,7 +1,7 @@
 Package: ShinyComplexSurvey
 Title: Interfaz Shiny para Analisis de Encuestas Complejas
 Version: 0.0.0.9000
-Authors: 
+Authors@R: 
     person(
       "Stalyn", "Guerrero Gómez",
       email = "guerrerostalyn@gmail.com",
@@ -31,14 +31,16 @@ Imports:
     rlang,
     purrr,
     shiny,
-    DT,
     tools,
     stats,
     utils,
     srvyr,
     survey,
     magrittr,
-    ggplot2
+    ggplot2,
+    tidyr,
+    jsonlite,
+    DT
 Suggests: 
     knitr,
     rmarkdown,

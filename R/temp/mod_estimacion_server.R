@@ -1,15 +1,16 @@
 mod_estimacion_server <- function(id, design) {
-
+  
   shiny::moduleServer(id, function(input, output, session) {
-
+    
+    
     output$theory_box <- shiny::renderUI({
-
+      
       shiny::req(input$estimator)
-
+      
       theory_text <- switch(
-
+        
         input$estimator,
-
+        
         # =========================================================
         # MEDIA
         # =========================================================
@@ -28,9 +29,15 @@ $$
 donde:
 
 <ul>
+<<<<<<< HEAD
+<li>$w_i = 1/\\pi_i$ es el peso de expansión</li>
+<li>$\\pi_i$ es la probabilidad de inclusión</li>
+<li>$y_i$ es la variable de interés</li>
+=======
 <li>\\(w_i = 1/\\pi_i\\) es el peso de expansión</li>
 <li>\\(\\pi_i\\) es la probabilidad de inclusión</li>
 <li>\\(y_i\\) es la variable de interés</li>
+>>>>>>> origin/develop
 </ul>
 
 Este estimador puede interpretarse como el estimador de Horvitz–Thompson del total dividido por el tamaño poblacional estimado.
@@ -60,7 +67,7 @@ $$
 La varianza se estima mediante linearización de Taylor o métodos de replicación.
 
 ",
-
+        
         # =========================================================
         # TOTAL
         # =========================================================
@@ -78,8 +85,13 @@ $$
 donde:
 
 <ul>
+<<<<<<< HEAD
+<li>$w_i = 1/\\pi_i$ es el peso de expansión</li>
+<li>$\\pi_i$ es la probabilidad de inclusión</li>
+=======
 <li>\\(w_i = 1/\\pi_i\\) es el peso de expansión</li>
 <li>\\(\\pi_i\\) es la probabilidad de inclusión</li>
+>>>>>>> origin/develop
 </ul>
 
 Bajo muestreo estratificado:
@@ -94,7 +106,7 @@ $$
 Este estimador es insesgado bajo el diseño de muestreo.
 
 ",
-
+        
         # =========================================================
         # PROPORCIÓN
         # =========================================================
@@ -125,7 +137,7 @@ Este estimador es equivalente a la media ponderada de la variable indicadora.
 La varianza se aproxima mediante linearización de Taylor.
 
 ",
-
+        
         # =========================================================
         # RAZÓN
         # =========================================================
@@ -133,8 +145,12 @@ La varianza se aproxima mediante linearización de Taylor.
 
 <b>Estimador de razón</b><br><br>
 
+<<<<<<< HEAD
+El estimador de razón compara dos totales poblacionales:
+=======
 El estimador de razón compara dos totales poblacionales estimados
 a partir de una muestra con pesos de expansión.
+>>>>>>> origin/develop
 
 $$
 \\hat{R} =
@@ -145,6 +161,14 @@ $$
 donde:
 
 <ul>
+<<<<<<< HEAD
+<li>$w_i$ son los pesos de expansión</li>
+<li>$y_i$ es la variable del numerador</li>
+<li>$x_i$ es la variable del denominador</li>
+</ul>
+
+Este estimador es <b>no lineal</b> y su varianza se aproxima mediante linearización.
+=======
 <li>\\(w_i\\) es el peso de expansión</li>
 <li>\\(y_i\\) es la variable del numerador</li>
 <li>\\(x_i\\) es la variable del denominador</li>
@@ -166,20 +190,34 @@ $$
 \\qquad
 \\hat{X} = \\sum_{i \\in s} w_i x_i
 $$
+>>>>>>> origin/develop
 
 <br>
 
 <b>Varianza aproximada</b>
 
+<<<<<<< HEAD
+=======
 El estimador es no lineal, por lo que su varianza se aproxima mediante
 linearización de Taylor:
 
+>>>>>>> origin/develop
 $$
 \\widehat{Var}(\\hat{R}) \\approx
 \\frac{1}{\\hat{X}^2}
 \\widehat{Var}(\\hat{Y} - \\hat{R}\\hat{X})
 $$
 
+<<<<<<< HEAD
+donde
+
+$$
+\\hat{Y} = \\sum w_i y_i
+\\quad
+\\hat{X} = \\sum w_i x_i
+$$
+
+=======
 <br>
 
 <b>Casos particulares utilizados en la aplicación</b>
@@ -197,6 +235,8 @@ y_i = I(\\text{hombre})
 x_i = I(\\text{mujer})
 $$
 
+donde \\(I(\\cdot)\\) es una función indicadora.
+
 El estimador es:
 
 $$
@@ -205,38 +245,73 @@ $$
      {\\sum w_i I(\\text{mujer})}
 $$
 
+Este tipo de razón se utiliza para comparar tamaños relativos
+entre grupos poblacionales.
+
 <br>
 
 <b>2. Variable continua sobre categoría</b><br>
 Ejemplo: ingreso promedio de los hombres.
 
+Sea
+
+$$
+y_i = ingreso_i
+\\qquad
+x_i = I(\\text{hombre})
+$$
+
+entonces
+
 $$
 \\hat{R} =
-\\frac{\\sum w_i \\, ingreso_i}
-     {\\sum w_i \\, I(\\text{hombre})}
+\\frac{\\sum w_i ingreso_i}
+     {\\sum w_i I(\\text{hombre})}
 $$
+
+Este estimador corresponde al promedio ponderado del ingreso
+en la subpoblación de hombres.
 
 <br>
 
 <b>3. Razón entre variables continuas</b><br>
 Ejemplo: relación ingreso / gasto.
 
+Sea
+
 $$
-\\hat{R} =
-\\frac{\\sum w_i \\, ingreso_i}
-     {\\sum w_i \\, gasto_i}
+y_i = ingreso_i
+\\qquad
+x_i = gasto_i
 $$
 
+entonces
+
+$$
+\\hat{R} =
+\\frac{\\sum w_i ingreso_i}
+     {\\sum w_i gasto_i}
+$$
+
+Este tipo de razón se utiliza para analizar relaciones económicas
+entre variables agregadas.
+
+>>>>>>> origin/develop
 <br>
 
 <b>Interpretación</b>
 
+<<<<<<< HEAD
+El estimador de razón se utiliza cuando existe correlación entre $Y$ y $X$,
+lo que puede reducir la varianza del estimador.
+=======
 El estimador de razón es especialmente eficiente cuando existe
 una fuerte correlación entre \\(Y\\) y \\(X\\), ya que el denominador
 actúa como variable auxiliar reduciendo la varianza del estimador.
+>>>>>>> origin/develop
 
 ",
-
+        
         # =========================================================
         # CUANTILES
         # =========================================================
@@ -251,7 +326,11 @@ F_w(y) =
 \\frac{\\sum w_i I(Y_i \\le y)}{\\sum w_i}
 $$
 
+<<<<<<< HEAD
+El cuantil $q_p$ satisface:
+=======
 El cuantil \\(q_p\\) satisface:
+>>>>>>> origin/develop
 
 $$
 F_w(q_p) = p
@@ -267,18 +346,18 @@ La varianza suele estimarse mediante:
 </ul>
 
 ",
-
+        
         # =========================================================
         # DEFAULT
         # =========================================================
         "Seleccione un estimador para visualizar su marco teórico."
-
+        
       )
-
+      
       shiny::tagList(
-
+        
         shiny::withMathJax(),
-
+        
         shiny::div(
           style = "
         background-color:#f8f9fa;
@@ -286,24 +365,28 @@ La varianza suele estimarse mediante:
         border-radius:10px;
         font-size:14px;
       ",
-          shiny::HTML(theory_text)
+          shiny::HTML(
+            
+              theory_text,
+            
+          )
         )
-
+        
       )
     })
-
+    
     observeEvent(input$estimator, {
-
+      
       if (input$estimator == "ratio") {
         updateSelectInput(session, "y_var", selected = NULL)
       }
-
+      
     })
-
+    
     output$quality_theory <- shiny::renderUI({
-
+      
       shiny::withMathJax(
-
+        
         shiny::div(
           style="
       background:#f8f9fa;
@@ -311,8 +394,8 @@ La varianza suele estimarse mediante:
       border-radius:10px;
       font-size:14px;
       ",
-
-          shiny::HTML("
+          
+          HTML("
 <b>Coeficiente de Variación (CV)</b><br><br>
 
 El coeficiente de variación mide la precisión relativa del estimador.
@@ -376,161 +459,159 @@ $$
         )
       )
     })
-
-
+    
+    
     ns <- session$ns
-
+    
     # ==================================================
-    # 1. Actualizar selectores desde el diseño
+    # 1. Actualizar selectores desde el diseño (bien hecho)
     # ==================================================
     shiny::observeEvent(design(), {
-
+      
       des <- design()
       shiny::req(des)
       shiny::req(!is.null(des$variables))
-
+      
       vars <- names(des$variables)
       shiny::req(length(vars) > 0)
-
-      shiny::updateSelectInput(session, "y_var",       choices = vars)
-      shiny::updateSelectInput(session, "numerator",   choices = vars)
+      
+      shiny::updateSelectInput(session, "y_var", choices = vars)
+      shiny::updateSelectInput(session, "numerator", choices = vars)
       shiny::updateSelectInput(session, "denominator", choices = vars)
       shiny::updateSelectInput(session, "domain_vars", choices = c("Ninguno" = "", vars))
     })
-
+    
     # ==================================================
     # 1b. Filtrar variables según tipo de estimador
     # ==================================================
     shiny::observeEvent(list(design(), input$estimator), {
-
+      
       des <- design()
       shiny::req(des)
       shiny::req(!is.null(des$variables))
       shiny::req(input$estimator)
-
+      
       vars <- des$variables
-
+      
       if (input$estimator %in% c("mean", "total", "quantile")) {
         valid_vars <- names(vars)[sapply(vars, is.numeric)]
       } else {
         valid_vars <- names(vars)
       }
-
+      
       shiny::updateSelectInput(session, "y_var", choices = valid_vars)
-
+      
     }, ignoreInit = TRUE)
-
+    
     # ==================================================
-    # 2. UI dinámica para ratio categórica
+    # 2. UI dinámica para ratio categórica (usa y_var)
     # ==================================================
-    output$ratio_levels_ui <- shiny::renderUI({
-
-      shiny::req(input$estimator == "ratio")
-      shiny::req(input$numerator, input$denominator)
-      shiny::req(design())
-
+    output$ratio_levels_ui <- renderUI({
+      
+      req(input$estimator == "ratio")
+      req(input$numerator, input$denominator)
+      req(design())
+      
       vars <- design()$variables
-
+      
       num_is_cat <- is.factor(vars[[input$numerator]]) ||
         is.character(vars[[input$numerator]])
-
+      
       den_is_cat <- is.factor(vars[[input$denominator]]) ||
         is.character(vars[[input$denominator]])
-
+      
       ui <- list()
-
+      
       if (num_is_cat) {
         ui <- c(ui, list(
-          shiny::selectInput(
+          selectInput(
             ns("ratio_num_level"),
             "Categoría (numerador)",
             choices = sort(unique(stats::na.omit(vars[[input$numerator]])))
           )
         ))
       }
-
+      
       if (den_is_cat) {
         ui <- c(ui, list(
-          shiny::selectInput(
+          selectInput(
             ns("ratio_den_level"),
             "Categoría (denominador)",
             choices = sort(unique(stats::na.omit(vars[[input$denominator]])))
           )
         ))
       }
-
+      
       if (length(ui) == 0) return(NULL)
-      shiny::tagList(ui)
+      tagList(ui)
     })
-
-
+    
+    
     # ==================================================
     # 3. Ejecutar estimación
     # ==================================================
     results_r <- shiny::eventReactive(input$run, {
-
+      
       des <- design()
-      shiny::req(des, input$estimator)
-
+      shiny::req(des, input$y_var, input$estimator)
+      
       domain <- input$domain_vars
       if (length(domain) == 0 || all(domain == "")) domain <- NULL
-
-      # ---- Ratio ----
+      
+      # ---- Ratio: categórica vs continua ----
       if (input$estimator == "ratio") {
-
+        
         num <- input$numerator
         den <- input$denominator
-        shiny::req(num, den)
-
+        
         vars <- design()$variables
-
+        
         num_is_cat <- is.factor(vars[[num]]) || is.character(vars[[num]])
         den_is_cat <- is.factor(vars[[den]]) || is.character(vars[[den]])
-
+        
         return(
           estimate_survey(
-            design      = des,
-            estimator   = "ratio",
-            by          = domain,
-            numerator   = num,
+            design = des,
+            estimator = "ratio",
+            by = domain,
+            numerator = num,
             denominator = den,
             ratio_num_level = if (num_is_cat) input$ratio_num_level else NULL,
             ratio_den_level = if (den_is_cat) input$ratio_den_level else NULL
           )
         )
       }
-
+      
+      
       # ---- Cuantiles ----
       if (input$estimator == "quantile") {
-
-        shiny::req(input$y_var)
+        
         probs <- trimws(unlist(strsplit(input$probs, ",")))
         probs <- sort(unique(as.numeric(probs)))
         shiny::req(length(probs) > 0, !any(is.na(probs)))
-
+        
         return(
           estimate_survey(
-            design    = des,
+            design = des,
             estimator = "quantile",
-            variable  = input$y_var,
-            by        = domain,
-            probs     = probs
+            variable = input$y_var,
+            by = domain,
+            probs = probs
           )
         )
       }
-
-      # ---- Mean / Total / Prop ----
-      shiny::req(input$y_var)
+      
+      # ---- Mean/Total/Prop ----
       estimate_survey(
-        design    = des,
+        design = des,
         estimator = input$estimator,
-        variable  = input$y_var,
-        by        = domain
+        variable = input$y_var,
+        by = domain
       )
-
+      
     }, ignoreInit = TRUE)
-
-
+    
+    
     # ==================================================
     # 4. Salidas
     # ==================================================
@@ -538,29 +619,25 @@ $$
       if (is.null(results_r())) return("La estimación aún no ha sido ejecutada.")
       list(
         variable_interes = input$y_var,
-        tipo_estimacion  = input$estimator,
-        dominios = if (is.null(input$domain_vars) || all(input$domain_vars == "")) {
-          "Global"
-        } else {
-          input$domain_vars
-        }
+        tipo_estimacion = input$estimator,
+        dominios = if (is.null(input$domain_vars) || all(input$domain_vars == "")) "Global" else input$domain_vars
       )
     })
-
+    
     output$preview <- DT::renderDT({
       res <- results_r()
       shiny::req(res)
-
-      res_fmt <- res %>%
-        dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 4)))
-
+      
+      res_fmt <- res  %>% 
+        dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
+      
       DT::datatable(
         res_fmt,
         rownames = FALSE,
-        options  = list(pageLength = 10, scrollX = TRUE)
+        options = list(pageLength = 10, scrollX = TRUE)
       )
     })
-
+    
     list(results = shiny::reactive(results_r()))
   })
 }

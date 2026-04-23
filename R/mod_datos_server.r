@@ -1,10 +1,38 @@
-mod_datos_server <- function(id) {
+mod_datos_server <- function(id, dict) {
   shiny::moduleServer(id, function(input, output, session) {
     
     # =========================
     # Contenedor reactivo
     # =========================
+    output$title <- shiny::renderText({
+      i18n_t(dict(), "mod_datos.title")
+    })
+    
+    output$input_panel <- shiny::renderText({
+      i18n_t(dict(), "mod_datos.input_panel")
+    })
+    
+    output$preview <- shiny::renderText({
+      i18n_t(dict(), "mod_datos.preview")
+    })
+    
+    
     data_r <- shiny::reactiveVal(NULL)
+    
+    output$file_ui <- shiny::renderUI({
+      shiny::fileInput(
+        session$ns("file"),
+        label = i18n_t(dict(), "mod_datos.file_label"),
+        accept = c(".csv", ".rds", ".xlsx")
+      )
+    })
+    
+    shiny::observe({
+      shiny::updateActionButton(
+        session, "load_example",
+        label = i18n_t(dict(), "mod_datos.example_btn")
+      )
+    })
     
     # =========================
     # Cargar datos desde archivo

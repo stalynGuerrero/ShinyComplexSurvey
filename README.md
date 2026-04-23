@@ -1,4 +1,4 @@
-# ShinyComplexSurvey: Una aplicación Shiny para análisis de encuestas complejas <img src="img/ShinyComplexSurvey_hex.png" align="right" width="120"/>
+# ShinyComplexSurvey: Una aplicación Shiny para análisis de encuestas complejas <img src="inst/img/ShinyComplexSurvey_hex.png" align="right" width="120"/>
 
 **ShinyComplexSurvey** es una aplicación de `R Shiny` diseñada para simplificar el
 análisis de datos de encuestas complejas. Permite a los usuarios explorar, 
