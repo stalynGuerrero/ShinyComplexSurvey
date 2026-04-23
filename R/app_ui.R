@@ -6,7 +6,10 @@ app_ui <- function() {
   shiny::withMathJax(
 
     shiny::navbarPage(
-      title  = "ShinyComplexSurvey",
+      title  = shiny::tagList(
+        shiny::tags$span(class = "app-brand-mark", shiny::icon("chart-line")),
+        shiny::tags$span("ShinyComplexSurvey")
+      ),
       id     = "navbar",
       fluid  = TRUE,
       theme  = NULL,
@@ -20,6 +23,14 @@ app_ui <- function() {
             display: flex;
             align-items: center;
             height: 50px;
+          }
+          .navbar-custom-menu .lang-label {
+            color: #e2e8f0;
+            font-size: 12px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-right: 8px;
           }
           .navbar-custom-menu .form-group {
             margin-bottom: 0 !important;
@@ -65,7 +76,8 @@ app_ui <- function() {
         class = "navbar-custom-menu",
         shiny::tags$div(
           style = "display:flex; align-items:center; gap:8px;",
-          shiny::tags$span(class = "fa fa-globe", style = "color:white;"),
+          shiny::tags$span(class = "lang-label", "Idioma"),
+          shiny::tags$span(class = "fa fa-globe", style = "color:#cbd5e1;"),
           shiny::selectizeInput(
             inputId = "lang",
             label   = NULL,
