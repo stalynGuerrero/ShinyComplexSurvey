@@ -1,0 +1,606 @@
+---
+title: "ShinyComplexSurvey: Análisis de Datos de Encuestas Complejas"
+author: "Stalyn Guerrero Gómez"
+date: today
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contenido"
+    number-sections: true
+    code-fold: false
+    code-tools: true
+    theme: flatly
+    highlight-style: github
+    df-print: kable
+    fig-width: 8
+    fig-height: 5
+vignette: >
+  %\VignetteIndexEntry{ShinyComplexSurvey: Análisis de Datos de Encuestas Complejas}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  message   = FALSE,
+  warning   = FALSE,
+  fig.align = "center"
+)
+```
+
+## Descripción general {.unnumbered}
+
+**ShinyComplexSurvey** es un paquete de R que proporciona un marco de
+trabajo orientado a *tidy* para el análisis de datos de encuestas
+complejas. Soporta:
+
+- Lectura de microdatos en múltiples formatos (CSV, XLSX, SPSS, Stata, RDS)
+- Construcción y diagnóstico de diseños de muestreo estratificado y
+  por conglomerados
+- Estimación de medias, totales, proporciones, razones y cuantiles
+  poblacionales con estimación correcta de varianza bajo diseños complejos
+- Derivación de nuevas variables a partir de datos de encuesta existentes
+- Lanzamiento de una aplicación Shiny interactiva para análisis
+  punto-y-clic
+
+Todas las funciones de estimación tienen en cuenta la estratificación,
+el agrupamiento y los pesos de muestreo desiguales, siguiendo el enfoque
+de linealización descrito en @lumley2010 y @sarndal1992.
+
+---
+
+## Instalación
+
+```{r}
+#| label: install
+#| eval: false
+# Instalar desde GitHub
+# install.packages("remotes")
+remotes::install_github("stalynGuerrero/ShinyComplexSurvey")
+```
+
+```{r}
+#| label: load
+library(ShinyComplexSurvey)
+```
+
+---
+
+## Datos simulados
+
+El paquete incluye `generate_example_data()`, que genera un conjunto de
+datos jerárquico de tres niveles (UPMs → hogares → individuos),
+representativo de un diseño de encuesta multietápica estratificada.
+
+```{r}
+#| label: gen-data
+data <- generate_example_data(n_upm = 100, seed = 123)
+dplyr::glimpse(data)
+```
+
+### Variables
+
+| Variable | Tipo | Descripción |
+|---|---|---|
+| `strata` | character | Identificador de estrato (S1–S5) |
+| `upm` | character | Unidad primaria de muestreo (UPM/PSU) |
+| `hogar_id` | character | Identificador de hogar |
+| `persona_id` | character | Identificador de individuo |
+| `weight` | numeric | Peso muestral ($w_i = 1/\pi_i$) |
+| `region` | character | Dominio: Norte / Centro / Sur |
+| `sexo` | character | Sexo: Hombre / Mujer |
+| `area` | character | Área: Urbana / Rural |
+| `edad` | numeric | Edad en años |
+| `educacion` | factor | Educación: Primaria / Secundaria / Superior |
+| `empleo` | factor | Empleo: Formal / Informal / Desocupado |
+| `ingreso_pc` | numeric | Ingreso per cápita del hogar |
+| `gasto_pc` | numeric | Gasto per cápita del hogar |
+| `pobre` | numeric | Indicador de pobreza (0 / 1) |
+| `ingreso2` | numeric | Variable auxiliar de ingreso (10 % faltante) |
+
+### Jerarquía
+
+La simulación garantiza consistencia interna:
+
+- Los pesos son constantes dentro del hogar: $w_{hi} = w_h$
+- El ingreso per cápita es constante dentro del hogar: $y_{hi} = Y_h / N_h$
+- Los individuos menores de 5 años tienen `NA` en educación
+
+El ingreso del hogar sigue un modelo gamma jerárquico con efectos
+aleatorios de UPM y hogar:
+
+$$
+Y_h \sim \text{Gamma}\!\left(\alpha,\; \beta \cdot \exp(u_j + v_h)\right)
+$$
+
+donde $u_j \sim N(0, 0{,}09)$ es el efecto de UPM y
+$v_h \sim N(0, 0{,}04)$ es el efecto de hogar.
+
+---
+
+## Lectura de datos externos
+
+Para cargar sus propios microdatos utilice `read_survey_data()`. Los
+formatos soportados se detectan automáticamente a partir de la extensión
+del archivo.
+
+```{r}
+#| label: read-data
+#| eval: false
+# CSV
+data <- read_survey_data("encuesta.csv")
+
+# SPSS
+data <- read_survey_data("encuesta.sav")
+
+# Stata
+data <- read_survey_data("encuesta.dta")
+
+# Excel
+data <- read_survey_data("encuesta.xlsx")
+```
+
+La función retorna los datos como un `tibble` y adjunta atributos de
+metadatos: `source_path`, `source_format`, `n_rows`, `n_cols`.
+
+---
+
+## Derivación de variables
+
+`mutate_survey_data()` crea nuevas variables a partir de una lista
+nombrada de fórmulas unilaterales, evaluadas secuencialmente en el
+entorno del marco de datos.
+
+```{r}
+#| label: mutate
+data <- mutate_survey_data(
+  data,
+  definitions = list(
+    log_ingreso = ~ log(ingreso_pc + 1),
+    ratio_gasto = ~ gasto_pc / ingreso_pc
+  )
+)
+
+dplyr::select(data, ingreso_pc, log_ingreso, ratio_gasto) |> head(4)
+```
+
+---
+
+## Diseño muestral
+
+### Construcción del objeto de diseño
+
+`as_survey_design_tbl()` envuelve `survey::svydesign()` y retorna un
+objeto `tbl_svy` compatible con el ecosistema **srvyr** / **survey**.
+
+```{r}
+#| label: design
+design <- as_survey_design_tbl(
+  data    = data,
+  weight  = "weight",
+  strata  = "strata",
+  cluster = "upm",
+  nest    = TRUE
+)
+
+class(design)
+```
+
+Configuraciones soportadas:
+
+| Configuración | Argumentos |
+|---|---|
+| Muestreo aleatorio simple | solo `weight` |
+| Estratificado | `weight` + `strata` |
+| Por conglomerados (etapa única) | `weight` + `cluster` |
+| Estratificado multietápico | `weight` + `strata` + `cluster` |
+| Con corrección de población finita | cualquiera de los anteriores + `fpc` |
+
+La función valida que los pesos sean estrictamente positivos y sin
+valores faltantes, y opcionalmente verifica que las UPMs no se
+compartan entre estratos (`check_psu = TRUE`).
+
+:::{.callout-note}
+Cuando un estrato contiene una sola UPM, la estimación de varianza por
+linealización de Taylor no está definida. La función establece
+automáticamente `options(survey.lonely.psu = "adjust")` para usar la
+aproximación conservadora centrada en la media del estrato [@cochran1977].
+:::
+
+### Diagnóstico del diseño
+
+```{r}
+#| label: describe
+describe_survey_design(design)
+```
+
+La tabla de diagnóstico reporta:
+
+| Columna | Descripción |
+|---|---|
+| `n_obs` | Tamaño total de la muestra |
+| `n_strata` | Número de estratos |
+| `n_clusters` | Número de UPMs |
+| `weight_min` | Peso muestral mínimo |
+| `weight_max` | Peso muestral máximo |
+| `weight_mean` | Peso muestral medio |
+| `weight_cv` | Coeficiente de variación de los pesos |
+
+---
+
+## Estimación
+
+Todos los estimadores se calculan con `estimate_survey()`. La función
+retorna un `tibble` con las siguientes columnas:
+
+| Columna | Descripción |
+|---|---|
+| `variable` | Nombre de la variable objetivo |
+| `estimator` | Tipo de estimador |
+| `estimate` | Estimación puntual $\hat\theta$ |
+| `se` | Error estándar $EE(\hat\theta)$ |
+| `cv` | Coeficiente de variación $CV = EE/\hat\theta$ |
+| `deff` | Efecto de diseño |
+| `lci` | Límite inferior del intervalo de confianza |
+| `uci` | Límite superior del intervalo de confianza |
+| `quality` | Etiqueta de precisión basada en el CV |
+
+**Etiquetas de precisión:**
+
+| CV | Etiqueta |
+|---|---|
+| $< 5\%$ | Precisión muy alta |
+| $5\%$–$10\%$ | Precisión alta |
+| $10\%$–$20\%$ | Precisión aceptable |
+| $20\%$–$30\%$ | Usar con precaución |
+| $\geq 30\%$ | Precisión baja |
+
+### Media poblacional
+
+La media poblacional ponderada es el estimador de razón de
+Horvitz–Thompson:
+
+$$
+\hat{\bar{Y}} = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
+$$
+
+La varianza se estima por linealización de Taylor:
+
+$$
+\widehat{Var}(\hat{\bar{Y}}) =
+\frac{1}{\hat N^2}\,
+\widehat{Var}\!\left(\sum_{i \in s} w_i y_i\right)
+$$
+
+```{r}
+#| label: mean
+r_media <- estimate_survey(
+  design    = design,
+  variable  = "ingreso_pc",
+  estimator = "mean"
+)
+r_media
+```
+
+### Total poblacional
+
+El estimador de Horvitz–Thompson para el total:
+
+$$
+\hat T = \sum_{i \in s} w_i y_i
+$$
+
+Bajo diseños estratificados:
+
+$$
+\hat T = \sum_{h=1}^{H} \sum_{i \in s_h} w_{hi}\, y_{hi}
+$$
+
+```{r}
+#| label: total
+r_total <- estimate_survey(
+  design    = design,
+  variable  = "ingreso_pc",
+  estimator = "total"
+)
+r_total
+```
+
+### Proporciones
+
+Para **variables binarias** ($y_i \in \{0, 1\}$), la proporción es
+equivalente a la media ponderada:
+
+$$
+\hat P = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
+$$
+
+```{r}
+#| label: prop-binaria
+r_pobre <- estimate_survey(
+  design    = design,
+  variable  = "pobre",
+  estimator = "prop"
+)
+r_pobre
+```
+
+Para **variables categóricas**, la función calcula automáticamente
+proporciones para cada categoría construyendo variables indicadoras
+$I(y_i = k)$:
+
+```{r}
+#| label: prop-cat
+r_empleo <- estimate_survey(
+  design    = design,
+  variable  = "empleo",
+  estimator = "prop"
+)
+r_empleo
+```
+
+### Estimador de razón
+
+El estimador de razón compara dos totales poblacionales:
+
+$$
+\hat R = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i x_i}
+= \frac{\hat T_Y}{\hat T_X}
+$$
+
+La varianza se estima por linealización de Taylor de primer orden
+[@cochran1977]:
+
+$$
+\widehat{Var}(\hat R) \approx
+\frac{1}{\hat T_X^2}\,
+\widehat{Var}\!\left(\hat T_Y - \hat R\, \hat T_X\right)
+$$
+
+**Numérico / Numérico:**
+
+```{r}
+#| label: razon-num
+r_razon <- estimate_survey(
+  design      = design,
+  estimator   = "ratio",
+  numerator   = "ingreso_pc",
+  denominator = "gasto_pc"
+)
+r_razon
+```
+
+**Categórico / Categórico** — por ejemplo, razón de trabajadores
+Formales respecto a Informales:
+
+```{r}
+#| label: razon-cat
+r_razon_cat <- estimate_survey(
+  design          = design,
+  estimator       = "ratio",
+  numerator       = "empleo",
+  denominator     = "empleo",
+  ratio_num_level = "Formal",
+  ratio_den_level = "Informal"
+)
+r_razon_cat
+```
+
+**Numérico / Categórico** — por ejemplo, ingreso promedio entre
+trabajadores formales:
+
+```{r}
+#| label: razon-mixta
+r_razon_mix <- estimate_survey(
+  design          = design,
+  estimator       = "ratio",
+  numerator       = "ingreso_pc",
+  denominator     = "empleo",
+  ratio_den_level = "Formal"
+)
+r_razon_mix
+```
+
+### Cuantiles
+
+Los cuantiles se definen a partir de la distribución empírica acumulada
+ponderada:
+
+$$
+\hat F_w(y) = \frac{\sum_{i \in s} w_i\, I(Y_i \le y)}{\sum_{i \in s} w_i}
+$$
+
+El cuantil de orden $p$ satisface $\hat F_w(q_p) = p$. Los intervalos
+de confianza se calculan utilizando el método de linealización de
+Woodruff [@woodruff1952].
+
+```{r}
+#| label: cuantiles
+r_cuant <- estimate_survey(
+  design    = design,
+  variable  = "ingreso_pc",
+  estimator = "quantile",
+  probs     = c(0.10, 0.25, 0.50, 0.75, 0.90)
+)
+r_cuant
+```
+
+---
+
+## Estimación por dominios
+
+Proporcione el argumento `by` para calcular estimaciones dentro de
+subpoblaciones. La estimación de varianza tiene correctamente en cuenta
+el diseño complejo dentro de cada dominio (sin sesgo por subsetting).
+
+```{r}
+#| label: dominio-media
+r_region <- estimate_survey(
+  design    = design,
+  variable  = "ingreso_pc",
+  estimator = "mean",
+  by        = "region"
+)
+r_region
+```
+
+Se admiten múltiples variables de dominio:
+
+```{r}
+#| label: dominio-multi
+r_region_area <- estimate_survey(
+  design    = design,
+  variable  = "ingreso_pc",
+  estimator = "mean",
+  by        = c("region", "area")
+)
+r_region_area
+```
+
+Proporciones por dominio:
+
+```{r}
+#| label: dominio-prop
+r_pobre_region <- estimate_survey(
+  design    = design,
+  variable  = "pobre",
+  estimator = "prop",
+  by        = "region"
+)
+r_pobre_region
+```
+
+---
+
+## Presentación de resultados
+
+`format_results_table()` redondea columnas numéricas, calcula el CV o
+los intervalos de confianza faltantes, y convierte `conf_level` a una
+cadena de porcentaje.
+
+```{r}
+#| label: formato
+format_results_table(r_region, digits = 3)
+```
+
+---
+
+## Visualización
+
+`plot_results_bar()` genera un gráfico de barras de `ggplot2` con
+barras de error que representan el intervalo de confianza. Las variables
+de dominio se detectan automáticamente como cualquier columna que no
+forme parte de las columnas de salida estándar.
+
+```{r}
+#| label: grafico-region
+#| fig-cap: "Ingreso per cápita por región (media ± IC 95%)"
+plot_results_bar(r_region)
+```
+
+```{r}
+#| label: grafico-multi
+#| fig-cap: "Ingreso per cápita por región y área (media ± IC 95%)"
+plot_results_bar(r_region_area)
+```
+
+Los gráficos de proporción restringen automáticamente el eje $y$ a
+$[0, 1]$:
+
+```{r}
+#| label: grafico-prop
+#| fig-cap: "Tasa de pobreza por región (proporción ± IC 95%)"
+plot_results_bar(r_pobre_region)
+```
+
+---
+
+## Aplicación Shiny
+
+El paquete incluye una aplicación Shiny interactiva completa que cubre
+todo el proceso de análisis:
+
+1. **Datos** — cargue CSV / RDS / XLSX o use los datos de ejemplo
+   integrados
+2. **Diseño muestral** — elija MAS, estratificado o conglomerados
+   multietápico; seleccione variables de peso, estrato y UPM; consulte
+   la teoría con MathJax
+3. **Estimación** — seleccione estimador, variable objetivo y dominios;
+   ejecute e inspeccione resultados con indicadores de precisión
+
+Inicie la aplicación con:
+
+```{r}
+#| label: shiny
+#| eval: false
+ComplexSurvey_app()
+```
+
+---
+
+## Ejemplo de flujo de trabajo completo
+
+```{r}
+#| label: workflow
+#| code-fold: true
+#| code-summary: "Mostrar flujo de trabajo completo"
+
+library(ShinyComplexSurvey)
+
+# 1. Generar / cargar datos
+data <- generate_example_data(n_upm = 100, seed = 2024)
+
+# 2. Derivar nuevas variables
+data <- mutate_survey_data(
+  data,
+  definitions = list(
+    log_ingreso = ~ log(ingreso_pc + 1)
+  )
+)
+
+# 3. Construir diseño muestral
+design <- as_survey_design_tbl(
+  data    = data,
+  weight  = "weight",
+  strata  = "strata",
+  cluster = "upm",
+  nest    = TRUE
+)
+
+# 4. Diagnosticar
+describe_survey_design(design)
+
+# 5. Estimar media por dominio y formatear
+res <- estimate_survey(
+  design    = design,
+  variable  = "ingreso_pc",
+  estimator = "mean",
+  by        = c("region", "area")
+)
+
+format_results_table(res, digits = 2)
+```
+
+---
+
+## Información de la sesión
+
+```{r}
+#| label: sesion
+#| code-fold: true
+sessionInfo()
+```
+
+---
+
+## Referencias {.unnumbered}
+
+::: {#refs}
+:::

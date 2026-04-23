@@ -1,0 +1,591 @@
+---
+title: "ShinyComplexSurvey: Analysis of Complex Survey Data"
+author: "Stalyn Guerrero Gómez"
+date: today
+lang: en
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+    number-sections: true
+    code-fold: false
+    code-tools: true
+    theme: flatly
+    highlight-style: github
+    df-print: kable
+    fig-width: 8
+    fig-height: 5
+vignette: >
+  %\VignetteIndexEntry{ShinyComplexSurvey: Analysis of Complex Survey Data}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  message   = FALSE,
+  warning   = FALSE,
+  fig.align = "center"
+)
+```
+
+## Overview {.unnumbered}
+
+**ShinyComplexSurvey** is an R package that provides a tidy-oriented
+framework for the analysis of complex survey data. It supports:
+
+- Reading microdata from multiple file formats (CSV, XLSX, SPSS, Stata, RDS)
+- Constructing and diagnosing stratified and clustered sampling designs
+- Estimating population means, totals, proportions, ratios, and quantiles
+  with correct variance estimation under complex designs
+- Deriving new variables from existing survey data
+- Launching an interactive Shiny application for point-and-click analysis
+
+All estimation functions account for stratification, clustering, and
+unequal sampling weights following the linearization approach described in
+@lumley2010 and @sarndal1992.
+
+---
+
+## Installation
+
+```{r}
+#| label: install
+#| eval: false
+# Install from GitHub
+# install.packages("remotes")
+remotes::install_github("stalynGuerrero/ShinyComplexSurvey")
+```
+
+```{r}
+#| label: load
+library(ShinyComplexSurvey)
+```
+
+---
+
+## Simulated Data
+
+The package ships with `generate_example_data()`, which generates a
+three-level hierarchical dataset (PSUs → households → individuals)
+representative of a stratified multistage survey design.
+
+```{r}
+#| label: gen-data
+data <- generate_example_data(n_upm = 100, seed = 123)
+dplyr::glimpse(data)
+```
+
+### Variables
+
+| Variable | Type | Description |
+|---|---|---|
+| `strata` | character | Stratum identifier (S1–S5) |
+| `upm` | character | Primary sampling unit (PSU/UPM) |
+| `hogar_id` | character | Household identifier |
+| `persona_id` | character | Individual identifier |
+| `weight` | numeric | Sampling weight ($w_i = 1/\pi_i$) |
+| `region` | character | Domain: North / Center / South |
+| `sexo` | character | Sex: Male / Female |
+| `area` | character | Area: Urban / Rural |
+| `edad` | numeric | Age in years |
+| `educacion` | factor | Education: Primary / Secondary / Higher |
+| `empleo` | factor | Employment: Formal / Informal / Unemployed |
+| `ingreso_pc` | numeric | Per-capita household income |
+| `gasto_pc` | numeric | Per-capita household expenditure |
+| `pobre` | numeric | Poverty indicator (0 / 1) |
+| `ingreso2` | numeric | Auxiliary income variable (10 % missing) |
+
+### Hierarchy
+
+The simulation enforces internal consistency:
+
+- Weights are constant within households: $w_{hi} = w_h$
+- Per-capita income is constant within households: $y_{hi} = Y_h / N_h$
+- Individuals younger than 5 years have `NA` for education
+
+Household income follows a hierarchical gamma model with PSU and
+household random effects:
+
+$$
+Y_h \sim \text{Gamma}\!\left(\alpha,\; \beta \cdot \exp(u_j + v_h)\right)
+$$
+
+where $u_j \sim N(0, 0.09)$ is the PSU effect and $v_h \sim N(0, 0.04)$
+is the household effect.
+
+---
+
+## Reading External Data
+
+To load your own microdata use `read_survey_data()`. Supported formats
+are detected automatically from the file extension.
+
+```{r}
+#| label: read-data
+#| eval: false
+# CSV
+data <- read_survey_data("survey.csv")
+
+# SPSS
+data <- read_survey_data("survey.sav")
+
+# Stata
+data <- read_survey_data("survey.dta")
+
+# Excel
+data <- read_survey_data("survey.xlsx")
+```
+
+The function returns the data as a `tibble` and attaches metadata
+attributes: `source_path`, `source_format`, `n_rows`, `n_cols`.
+
+---
+
+## Deriving Variables
+
+`mutate_survey_data()` creates new variables from a named list of
+one-sided formulas, evaluated sequentially in the environment of the
+data frame.
+
+```{r}
+#| label: mutate
+data <- mutate_survey_data(
+  data,
+  definitions = list(
+    log_ingreso = ~ log(ingreso_pc + 1),
+    ratio_gasto = ~ gasto_pc / ingreso_pc
+  )
+)
+
+dplyr::select(data, ingreso_pc, log_ingreso, ratio_gasto) |> head(4)
+```
+
+---
+
+## Survey Design
+
+### Building a Design Object
+
+`as_survey_design_tbl()` wraps `survey::svydesign()` and returns a
+`tbl_svy` object compatible with the **srvyr** / **survey** ecosystem.
+
+```{r}
+#| label: design
+design <- as_survey_design_tbl(
+  data    = data,
+  weight  = "weight",
+  strata  = "strata",
+  cluster = "upm",
+  nest    = TRUE
+)
+
+class(design)
+```
+
+Supported configurations:
+
+| Configuration | Arguments |
+|---|---|
+| Simple random sampling | `weight` only |
+| Stratified | `weight` + `strata` |
+| Clustered (single-stage) | `weight` + `cluster` |
+| Stratified multistage | `weight` + `strata` + `cluster` |
+| With FPC | any of the above + `fpc` |
+
+The function validates that weights are strictly positive and free of
+missing values, and optionally checks that PSUs are not shared across
+strata (`check_psu = TRUE`).
+
+:::{.callout-note}
+When a stratum contains only one PSU, variance estimation via Taylor
+linearization is undefined. The function automatically sets
+`options(survey.lonely.psu = "adjust")` to use the conservative
+centered-at-stratum-mean approximation [@cochran1977].
+:::
+
+### Diagnosing the Design
+
+```{r}
+#| label: describe
+describe_survey_design(design)
+```
+
+The diagnostic table reports:
+
+| Column | Description |
+|---|---|
+| `n_obs` | Total sample size |
+| `n_strata` | Number of strata |
+| `n_clusters` | Number of PSUs |
+| `weight_min` | Minimum sampling weight |
+| `weight_max` | Maximum sampling weight |
+| `weight_mean` | Mean sampling weight |
+| `weight_cv` | Coefficient of variation of weights |
+
+---
+
+## Estimation
+
+All estimators are computed with `estimate_survey()`. The function returns
+a `tibble` with the following columns:
+
+| Column | Description |
+|---|---|
+| `variable` | Name of the target variable |
+| `estimator` | Type of estimator |
+| `estimate` | Point estimate $\hat\theta$ |
+| `se` | Standard error $SE(\hat\theta)$ |
+| `cv` | Coefficient of variation $CV = SE/\hat\theta$ |
+| `deff` | Design effect |
+| `lci` | Lower confidence bound |
+| `uci` | Upper confidence bound |
+| `quality` | Precision label based on CV |
+
+**Precision labels:**
+
+| CV | Label |
+|---|---|
+| $< 5\%$ | Very high precision |
+| $5\%$–$10\%$ | High precision |
+| $10\%$–$20\%$ | Acceptable precision |
+| $20\%$–$30\%$ | Use with caution |
+| $\geq 30\%$ | Low precision |
+
+### Population Mean
+
+The weighted population mean is the Horvitz–Thompson ratio estimator:
+
+$$
+\hat{\bar{Y}} = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
+$$
+
+Variance is estimated by Taylor linearization:
+
+$$
+\widehat{Var}(\hat{\bar{Y}}) =
+\frac{1}{\hat N^2}\,
+\widehat{Var}\!\left(\sum_{i \in s} w_i y_i\right)
+$$
+
+```{r}
+#| label: mean
+r_mean <- estimate_survey(
+  design   = design,
+  variable = "ingreso_pc",
+  estimator = "mean"
+)
+r_mean
+```
+
+### Population Total
+
+The Horvitz–Thompson estimator for the total:
+
+$$
+\hat T = \sum_{i \in s} w_i y_i
+$$
+
+Under stratified designs:
+
+$$
+\hat T = \sum_{h=1}^{H} \sum_{i \in s_h} w_{hi}\, y_{hi}
+$$
+
+```{r}
+#| label: total
+r_total <- estimate_survey(
+  design   = design,
+  variable = "ingreso_pc",
+  estimator = "total"
+)
+r_total
+```
+
+### Proportions
+
+For **binary variables** ($y_i \in \{0, 1\}$), the proportion is
+equivalent to the weighted mean:
+
+$$
+\hat P = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
+$$
+
+```{r}
+#| label: prop-binary
+r_pobre <- estimate_survey(
+  design   = design,
+  variable = "pobre",
+  estimator = "prop"
+)
+r_pobre
+```
+
+For **categorical variables**, the function automatically computes
+proportions for each category by constructing indicator variables
+$I(y_i = k)$:
+
+```{r}
+#| label: prop-cat
+r_empleo <- estimate_survey(
+  design   = design,
+  variable = "empleo",
+  estimator = "prop"
+)
+r_empleo
+```
+
+### Ratio Estimator
+
+The ratio estimator compares two population totals:
+
+$$
+\hat R = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i x_i}
+= \frac{\hat T_Y}{\hat T_X}
+$$
+
+Variance is estimated by first-order Taylor linearization [@cochran1977]:
+
+$$
+\widehat{Var}(\hat R) \approx
+\frac{1}{\hat T_X^2}\,
+\widehat{Var}\!\left(\hat T_Y - \hat R\, \hat T_X\right)
+$$
+
+**Numeric / Numeric:**
+
+```{r}
+#| label: ratio-num
+r_ratio <- estimate_survey(
+  design      = design,
+  estimator   = "ratio",
+  numerator   = "ingreso_pc",
+  denominator = "gasto_pc"
+)
+r_ratio
+```
+
+**Categorical / Categorical** — e.g. ratio of Formal to Informal workers:
+
+```{r}
+#| label: ratio-cat
+r_ratio_cat <- estimate_survey(
+  design          = design,
+  estimator       = "ratio",
+  numerator       = "empleo",
+  denominator     = "empleo",
+  ratio_num_level = "Formal",
+  ratio_den_level = "Informal"
+)
+r_ratio_cat
+```
+
+**Numeric / Categorical** — e.g. average income among formal workers:
+
+```{r}
+#| label: ratio-mixed
+r_ratio_mix <- estimate_survey(
+  design          = design,
+  estimator       = "ratio",
+  numerator       = "ingreso_pc",
+  denominator     = "empleo",
+  ratio_den_level = "Formal"
+)
+r_ratio_mix
+```
+
+### Quantiles
+
+Quantiles are defined from the weighted empirical cumulative distribution:
+
+$$
+\hat F_w(y) = \frac{\sum_{i \in s} w_i\, I(Y_i \le y)}{\sum_{i \in s} w_i}
+$$
+
+The $p$-th quantile satisfies $\hat F_w(q_p) = p$. Confidence intervals
+are computed using the Woodruff linearization method [@woodruff1952].
+
+```{r}
+#| label: quantile
+r_quant <- estimate_survey(
+  design   = design,
+  variable = "ingreso_pc",
+  estimator = "quantile",
+  probs    = c(0.10, 0.25, 0.50, 0.75, 0.90)
+)
+r_quant
+```
+
+---
+
+## Domain Estimation
+
+Supply the `by` argument to compute estimates within subpopulations.
+Variance estimation correctly accounts for the complex design within
+each domain (no subsetting bias).
+
+```{r}
+#| label: domain-mean
+r_region <- estimate_survey(
+  design   = design,
+  variable = "ingreso_pc",
+  estimator = "mean",
+  by       = "region"
+)
+r_region
+```
+
+Multiple domain variables are supported:
+
+```{r}
+#| label: domain-multi
+r_region_area <- estimate_survey(
+  design   = design,
+  variable = "ingreso_pc",
+  estimator = "mean",
+  by       = c("region", "area")
+)
+r_region_area
+```
+
+Proportions by domain:
+
+```{r}
+#| label: domain-prop
+r_pobre_region <- estimate_survey(
+  design   = design,
+  variable = "pobre",
+  estimator = "prop",
+  by       = "region"
+)
+r_pobre_region
+```
+
+---
+
+## Formatting Results
+
+`format_results_table()` rounds numeric columns, computes missing CV
+or confidence intervals, and converts `conf_level` to a percentage string.
+
+```{r}
+#| label: format
+format_results_table(r_region, digits = 3)
+```
+
+---
+
+## Visualisation
+
+`plot_results_bar()` generates a `ggplot2` bar chart with error bars
+representing the confidence interval. Domain variables are detected
+automatically as any column not in the standard output columns.
+
+```{r}
+#| label: plot-region
+#| fig-cap: "Per-capita income by region (mean ± 95% CI)"
+plot_results_bar(r_region)
+```
+
+```{r}
+#| label: plot-multi
+#| fig-cap: "Per-capita income by region and area (mean ± 95% CI)"
+plot_results_bar(r_region_area)
+```
+
+Proportion plots automatically constrain the y-axis to $[0, 1]$:
+
+```{r}
+#| label: plot-prop
+#| fig-cap: "Poverty rate by region (proportion ± 95% CI)"
+plot_results_bar(r_pobre_region)
+```
+
+---
+
+## Shiny Application
+
+The package includes a full interactive Shiny application covering the
+complete analysis pipeline:
+
+1. **Data** — upload CSV / RDS / XLSX or load built-in example data
+2. **Survey design** — choose SRS, stratified, or multistage cluster;
+   select weight, stratum, and PSU variables; view MathJax theory
+3. **Estimation** — select estimator, target variable, and domains;
+   execute and inspect results with precision indicators
+
+Launch the application with:
+
+```{r}
+#| label: shiny
+#| eval: false
+ComplexSurvey_app()
+```
+
+---
+
+## Complete Workflow Example
+
+```{r}
+#| label: workflow
+#| code-fold: true
+#| code-summary: "Show complete workflow"
+
+library(ShinyComplexSurvey)
+
+# 1. Generate / load data
+data <- generate_example_data(n_upm = 100, seed = 2024)
+
+# 2. Derive new variables
+data <- mutate_survey_data(
+  data,
+  definitions = list(
+    log_ingreso = ~ log(ingreso_pc + 1)
+  )
+)
+
+# 3. Build survey design
+design <- as_survey_design_tbl(
+  data    = data,
+  weight  = "weight",
+  strata  = "strata",
+  cluster = "upm",
+  nest    = TRUE
+)
+
+# 4. Diagnose
+describe_survey_design(design)
+
+# 5. Estimate mean by domain and format
+res <- estimate_survey(
+  design    = design,
+  variable  = "ingreso_pc",
+  estimator = "mean",
+  by        = c("region", "area")
+)
+
+format_results_table(res, digits = 2)
+```
+
+---
+
+## Session Information
+
+```{r}
+#| label: session
+#| code-fold: true
+sessionInfo()
+```
+
+---
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
