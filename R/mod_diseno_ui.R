@@ -4,7 +4,7 @@ mod_diseno_ui <- function(id) {
 
   shiny::fluidPage(
 
-    shiny::h3("Diseño muestral"),
+    shiny::h3("Dise\u00f1o muestral"),
     shiny::hr(),
 
     shiny::fluidRow(
@@ -13,15 +13,15 @@ mod_diseno_ui <- function(id) {
         4,
         shiny::wellPanel(
 
-          shiny::h4("Definición del diseño"),
+          shiny::h4("Definici\u00f3n del dise\u00f1o"),
 
           shiny::selectInput(
             ns("design_type"),
-            "Tipo de diseño",
+            "Tipo de dise\u00f1o",
             choices = c(
               "Simple (SRS)"               = "srs",
               "Estratificado"              = "stratified",
-              "Conglomerados / Multietápico" = "cluster"
+              "Conglomerados / Multiet\u00e1pico" = "cluster"
             )
           ),
 
@@ -33,7 +33,7 @@ mod_diseno_ui <- function(id) {
 
           shiny::actionButton(
             ns("build"),
-            "Construir diseño",
+            "Construir dise\u00f1o",
             class = "btn-primary"
           )
         )
@@ -43,15 +43,15 @@ mod_diseno_ui <- function(id) {
         8,
         shiny::wellPanel(
 
-          shiny::h4("Resumen del diseño"),
+          shiny::h4("Resumen del dise\u00f1o"),
           shiny::verbatimTextOutput(ns("log")),
 
-          shiny::h4("Código del diseño en R"),
+          shiny::h4("C\u00f3digo del dise\u00f1o en R"),
           shiny::verbatimTextOutput(ns("design_code")),
 
           shiny::hr(),
 
-          shiny::h4("Diagnóstico"),
+          shiny::h4("Diagn\u00f3stico"),
           shiny::tableOutput(ns("summary"))
         )
       )

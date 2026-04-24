@@ -53,6 +53,98 @@ unequal sampling weights following the linearization approach described in
 
 ---
 
+## Conceptual Framework and Notation {#sec-notation}
+
+This section establishes the statistical notation used throughout the
+vignette, following the conventions of @gutierrez2025.
+
+### Population and Sample
+
+Let $U = \{1, 2, \ldots, N\}$ be the **finite population** of size $N$,
+and $s \subset U$ the **sample** selected under a probability design
+$p(s)$. For each unit $k \in U$, $y_k$ denotes the value of the variable
+of interest. The **population total** and **population mean** are defined
+respectively as:
+
+$$
+Y = \sum_{k \in U} y_k, \qquad \bar{Y} = \frac{Y}{N}.
+$$
+
+### Design Weights and Adjusted Weights
+
+The inclusion probability of unit $k$ is $\pi_k = \Pr(k \in s) > 0$.
+The **basic design weight** is $d_k = 1/\pi_k$. In practice these weights
+are modified to incorporate non-response adjustments or calibration to
+known population totals, yielding **adjusted weights** $w_k$. Throughout
+this documentation, $w_k$ refers to the final weights available in the
+microdata file (variable `weight`).
+
+### Horvitz–Thompson Estimator
+
+The Horvitz–Thompson (HT) estimator of the population total is
+[@horvitz1952]:
+
+$$
+\hat{Y}_{HT} = \sum_{k \in s} d_k\, y_k,
+$$
+
+and the estimated population size is:
+
+$$
+\hat{N}_{HT} = \sum_{k \in s} d_k.
+$$
+
+When working with adjusted weights $w_k$, the weighted HT estimator
+takes the form $\hat{Y}_w = \sum_{k \in s} w_k\, y_k$.
+
+### Design-Based Variance
+
+The variance of the HT estimator is estimated as [@sarndal1992]:
+
+$$
+\hat{V}_p\!\left(\hat{Y}_{HT}\right) =
+\sum_{k \in s}\sum_{l \in s}
+\bigl(d_k d_l - d_{kl}\bigr)\, y_k\, y_l,
+$$
+
+where $d_{kl} = 1/\pi_{kl}$ and $\pi_{kl} = \Pr(k, l \in s)$ are the
+second-order inclusion probabilities. In practice, equivalent methods
+such as **Taylor linearization** or **replication** (*jackknife*,
+*bootstrap*) are used because they do not require explicit computation
+of $\pi_{kl}$.
+
+### Stratified Multistage Design
+
+For a design with $H$ strata, $\alpha_h$ primary sampling units (PSUs)
+in stratum $h$, and $n_{h\alpha}$ observations in PSU $\alpha$, the
+total estimator is:
+
+$$
+\hat{Y}_{HT} = \sum_{h=1}^{H}\sum_{\alpha=1}^{\alpha_h}
+\sum_{k=1}^{n_{h\alpha}} \omega_{h\alpha k}\, y_{h\alpha k},
+$$
+
+where $\omega_{h\alpha k}$ is the adjusted weight of individual $k$ in
+PSU $\alpha$ of stratum $h$.
+
+### Design Effect (DEFF)
+
+Following @kish1965, the design effect is defined as the ratio of the
+estimator variance under the complex design to the variance of the same
+estimator under simple random sampling (SRS) of the same size:
+
+$$
+\widehat{\text{DEFF}} =
+\frac{\hat{V}_p(\hat{\theta})}{\hat{V}_{\text{SRS}}(\hat{\theta})}.
+$$
+
+A value $\widehat{\text{DEFF}} > 1$ indicates that the complex design
+inflates variance relative to SRS, while $\widehat{\text{DEFF}} < 1$
+signals an efficiency gain, typically arising from effective
+stratification.
+
+---
+
 ## Installation
 
 ```{r}
@@ -86,39 +178,42 @@ dplyr::glimpse(data)
 
 | Variable | Type | Description |
 |---|---|---|
-| `strata` | character | Stratum identifier (S1–S5) |
-| `upm` | character | Primary sampling unit (PSU/UPM) |
+| `strata` | character | Stratum identifier ($h = 1,\ldots,H$) |
+| `upm` | character | Primary sampling unit $\alpha$ within stratum $h$ |
 | `hogar_id` | character | Household identifier |
-| `persona_id` | character | Individual identifier |
-| `weight` | numeric | Sampling weight ($w_i = 1/\pi_i$) |
-| `region` | character | Domain: North / Center / South |
+| `persona_id` | character | Individual identifier $k$ |
+| `weight` | numeric | Adjusted weight $w_k$ (inverse inclusion probability, calibrated) |
+| `region` | character | Estimation domain: North / Center / South |
 | `sexo` | character | Sex: Male / Female |
 | `area` | character | Area: Urban / Rural |
 | `edad` | numeric | Age in years |
-| `educacion` | factor | Education: Primary / Secondary / Higher |
-| `empleo` | factor | Employment: Formal / Informal / Unemployed |
-| `ingreso_pc` | numeric | Per-capita household income |
+| `educacion` | factor | Education level: Primary / Secondary / Higher |
+| `empleo` | factor | Employment status: Formal / Informal / Unemployed |
+| `ingreso_pc` | numeric | Per-capita household income ($y_k$) |
 | `gasto_pc` | numeric | Per-capita household expenditure |
-| `pobre` | numeric | Poverty indicator (0 / 1) |
-| `ingreso2` | numeric | Auxiliary income variable (10 % missing) |
+| `pobre` | numeric | Binary poverty indicator: $y_k \in \{0, 1\}$ |
+| `ingreso2` | numeric | Auxiliary income variable (10 % missing values) |
 
-### Hierarchy
+### Hierarchy and Internal Consistency
 
-The simulation enforces internal consistency:
+The simulation enforces the following constraints:
 
-- Weights are constant within households: $w_{hi} = w_h$
-- Per-capita income is constant within households: $y_{hi} = Y_h / N_h$
-- Individuals younger than 5 years have `NA` for education
+- Weights are constant within households:
+  $w_{h\alpha k} = w_{h\alpha}$ for all $k$ in the household.
+- Per-capita income is constant within households:
+  $y_{h\alpha k} = Y_{h\alpha} / N_{h\alpha}$.
+- Individuals younger than 5 years have `NA` for education.
 
 Household income follows a hierarchical gamma model with PSU and
 household random effects:
 
 $$
-Y_h \sim \text{Gamma}\!\left(\alpha,\; \beta \cdot \exp(u_j + v_h)\right)
+Y_{h\alpha} \sim \text{Gamma}\!\left(\alpha_0,\;
+\beta_0 \cdot \exp(u_{h\alpha} + v_{h\alpha k})\right)
 $$
 
-where $u_j \sim N(0, 0.09)$ is the PSU effect and $v_h \sim N(0, 0.04)$
-is the household effect.
+where $u_{h\alpha} \sim N(0, 0.09)$ is the PSU effect and
+$v_{h\alpha k} \sim N(0, 0.04)$ is the household effect.
 
 ---
 
@@ -174,7 +269,8 @@ dplyr::select(data, ingreso_pc, log_ingreso, ratio_gasto) |> head(4)
 ### Building a Design Object
 
 `as_survey_design_tbl()` wraps `survey::svydesign()` and returns a
-`tbl_svy` object compatible with the **srvyr** / **survey** ecosystem.
+`tbl_svy` object compatible with the **srvyr** / **survey** ecosystem
+[@lumley2010].
 
 ```{r}
 #| label: design
@@ -193,21 +289,21 @@ Supported configurations:
 
 | Configuration | Arguments |
 |---|---|
-| Simple random sampling | `weight` only |
+| Simple random sampling (SRS) | `weight` only |
 | Stratified | `weight` + `strata` |
 | Clustered (single-stage) | `weight` + `cluster` |
 | Stratified multistage | `weight` + `strata` + `cluster` |
-| With FPC | any of the above + `fpc` |
+| With finite population correction | any of the above + `fpc` |
 
-The function validates that weights are strictly positive and free of
-missing values, and optionally checks that PSUs are not shared across
-strata (`check_psu = TRUE`).
+The function validates that weights $w_k$ are strictly positive
+($w_k > 0$) and free of missing values, and optionally checks that PSUs
+are not shared across strata (`check_psu = TRUE`).
 
 :::{.callout-note}
-When a stratum contains only one PSU, variance estimation via Taylor
-linearization is undefined. The function automatically sets
-`options(survey.lonely.psu = "adjust")` to use the conservative
-centered-at-stratum-mean approximation [@cochran1977].
+When a stratum $h$ contains only one PSU ($\alpha_h = 1$), estimation
+of $\hat{V}_p$ by Taylor linearization is undefined. The function
+automatically sets `options(survey.lonely.psu = "adjust")` to use the
+conservative centered-at-stratum-mean approximation [@cochran1977].
 :::
 
 ### Diagnosing the Design
@@ -221,13 +317,13 @@ The diagnostic table reports:
 
 | Column | Description |
 |---|---|
-| `n_obs` | Total sample size |
-| `n_strata` | Number of strata |
-| `n_clusters` | Number of PSUs |
-| `weight_min` | Minimum sampling weight |
-| `weight_max` | Maximum sampling weight |
-| `weight_mean` | Mean sampling weight |
-| `weight_cv` | Coefficient of variation of weights |
+| `n_obs` | Total sample size $n = \lvert s \rvert$ |
+| `n_strata` | Number of strata $H$ |
+| `n_clusters` | Total number of PSUs $\sum_h \alpha_h$ |
+| `weight_min` | $\min_{k \in s} w_k$ |
+| `weight_max` | $\max_{k \in s} w_k$ |
+| `weight_mean` | $\bar{w} = \hat{N}_w / n$ |
+| `weight_cv` | $CV(w) = s_w / \bar{w}$ |
 
 ---
 
@@ -240,17 +336,17 @@ a `tibble` with the following columns:
 |---|---|
 | `variable` | Name of the target variable |
 | `estimator` | Type of estimator |
-| `estimate` | Point estimate $\hat\theta$ |
-| `se` | Standard error $SE(\hat\theta)$ |
-| `cv` | Coefficient of variation $CV = SE/\hat\theta$ |
-| `deff` | Design effect |
+| `estimate` | Point estimate $\hat{\theta}$ |
+| `se` | Standard error $ee(\hat{\theta}) = \sqrt{\hat{V}_p(\hat{\theta})}$ |
+| `cv` | Coefficient of variation $CV = ee(\hat{\theta})/\hat{\theta}$ |
+| `deff` | Design effect $\widehat{\text{DEFF}}$ |
 | `lci` | Lower confidence bound |
 | `uci` | Upper confidence bound |
-| `quality` | Precision label based on CV |
+| `quality` | Precision label based on $CV$ |
 
-**Precision labels:**
+**Precision labels** (based on the coefficient of variation):
 
-| CV | Label |
+| $CV$ | Label |
 |---|---|
 | $< 5\%$ | Very high precision |
 | $5\%$–$10\%$ | High precision |
@@ -260,25 +356,34 @@ a `tibble` with the following columns:
 
 ### Population Mean
 
-The weighted population mean is the Horvitz–Thompson ratio estimator:
+The weighted total and estimated population size are:
 
 $$
-\hat{\bar{Y}} = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
+\hat{Y}_w = \sum_{k \in s} w_k\, y_k,
+\qquad
+\hat{N}_w = \sum_{k \in s} w_k.
 $$
 
-Variance is estimated by Taylor linearization:
+The **weighted mean** (Horvitz–Thompson ratio estimator) is:
 
 $$
-\widehat{Var}(\hat{\bar{Y}}) =
-\frac{1}{\hat N^2}\,
-\widehat{Var}\!\left(\sum_{i \in s} w_i y_i\right)
+\bar{y}_w = \frac{\hat{Y}_w}{\hat{N}_w}
+= \frac{\displaystyle\sum_{k \in s} w_k\, y_k}
+       {\displaystyle\sum_{k \in s} w_k}.
+$$
+
+Its variance is estimated by Taylor linearization [@sarndal1992]:
+
+$$
+\hat{V}_p\!\left(\bar{y}_w\right) =
+\frac{1}{\hat{N}_w^2}\,\hat{V}_p\!\left(\hat{Y}_w\right).
 $$
 
 ```{r}
 #| label: mean
 r_mean <- estimate_survey(
-  design   = design,
-  variable = "ingreso_pc",
+  design    = design,
+  variable  = "ingreso_pc",
   estimator = "mean"
 )
 r_mean
@@ -286,23 +391,30 @@ r_mean
 
 ### Population Total
 
-The Horvitz–Thompson estimator for the total:
+Under a stratified multistage design, the HT total estimator is:
 
 $$
-\hat T = \sum_{i \in s} w_i y_i
+\hat{Y}_w =
+\sum_{h=1}^{H}\sum_{\alpha=1}^{\alpha_h}\sum_{k=1}^{n_{h\alpha}}
+\omega_{h\alpha k}\, y_{h\alpha k}.
 $$
 
-Under stratified designs:
+Its variance is estimated stratum by stratum:
 
 $$
-\hat T = \sum_{h=1}^{H} \sum_{i \in s_h} w_{hi}\, y_{hi}
+\hat{V}_p\!\left(\hat{Y}_w\right) =
+\sum_{h=1}^{H}
+\hat{V}_{p,h}\!\left(\hat{Y}_{w,h}\right),
 $$
+
+where $\hat{V}_{p,h}$ is computed within each stratum $h$ using the
+deviations of PSU totals from their stratum mean.
 
 ```{r}
 #| label: total
 r_total <- estimate_survey(
-  design   = design,
-  variable = "ingreso_pc",
+  design    = design,
+  variable  = "ingreso_pc",
   estimator = "total"
 )
 r_total
@@ -310,32 +422,61 @@ r_total
 
 ### Proportions
 
-For **binary variables** ($y_i \in \{0, 1\}$), the proportion is
-equivalent to the weighted mean:
+#### Binary Variable
+
+For an indicator variable $y_k \in \{0, 1\}$, the **population
+proportion** $\pi$ is estimated as [@heeringa2017]:
 
 $$
-\hat P = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i}
+\hat{p} =
+\frac{\displaystyle\sum_{h=1}^{H}\sum_{\alpha=1}^{\alpha_h}
+\sum_{k=1}^{n_{h\alpha}} \omega_{h\alpha k}\, I(y_k = 1)}
+{\displaystyle\sum_{h=1}^{H}\sum_{\alpha=1}^{\alpha_h}
+\sum_{k=1}^{n_{h\alpha}} \omega_{h\alpha k}}
+= \frac{\hat{N}_1}{\hat{N}_w}.
+$$
+
+The variance of $\hat{p}$ is approximated by Taylor linearization:
+
+$$
+\hat{V}_p(\hat{p}) \;\dot{=}\;
+\frac{\hat{V}_p(\hat{N}_1) + \hat{p}^2\,\hat{V}_p(\hat{N}_w)
+- 2\hat{p}\,\widehat{\text{cov}}(\hat{N}_1, \hat{N}_w)}
+{\hat{N}_w^2}.
 $$
 
 ```{r}
 #| label: prop-binary
 r_pobre <- estimate_survey(
-  design   = design,
-  variable = "pobre",
+  design    = design,
+  variable  = "pobre",
   estimator = "prop"
 )
 r_pobre
 ```
 
-For **categorical variables**, the function automatically computes
-proportions for each category by constructing indicator variables
-$I(y_i = k)$:
+#### Multinomial Categorical Variable
+
+For a variable with categories $\mathcal{K} = \{k_1, k_2, \ldots\}$,
+the proportion for category $k$ is:
+
+$$
+\hat{p}_k =
+\frac{\displaystyle\sum_{h=1}^{H}\sum_{\alpha=1}^{\alpha_h}
+\sum_{i=1}^{n_{h\alpha}} \omega_{h\alpha i}\, I(y_i = k)}
+{\displaystyle\sum_{h=1}^{H}\sum_{\alpha=1}^{\alpha_h}
+\sum_{i=1}^{n_{h\alpha}} \omega_{h\alpha i}}
+= \frac{\hat{N}_k}{\hat{N}_w}.
+$$
+
+The function automatically constructs the indicator $I(y_i = k)$ for
+each category:
 
 ```{r}
 #| label: prop-cat
 r_empleo <- estimate_survey(
-  design   = design,
-  variable = "empleo",
+  design    = design,
+  variable  = "empleo",
   estimator = "prop"
 )
 r_empleo
@@ -343,19 +484,20 @@ r_empleo
 
 ### Ratio Estimator
 
-The ratio estimator compares two population totals:
+The ratio estimator of two population totals is [@cochran1977]:
 
 $$
-\hat R = \frac{\sum_{i \in s} w_i y_i}{\sum_{i \in s} w_i x_i}
-= \frac{\hat T_Y}{\hat T_X}
+\hat{R} = \frac{\hat{Y}_w}{\hat{X}_w}
+= \frac{\displaystyle\sum_{k \in s} w_k\, y_k}
+       {\displaystyle\sum_{k \in s} w_k\, x_k}.
 $$
 
-Variance is estimated by first-order Taylor linearization [@cochran1977]:
+Variance is estimated by first-order Taylor linearization:
 
 $$
-\widehat{Var}(\hat R) \approx
-\frac{1}{\hat T_X^2}\,
-\widehat{Var}\!\left(\hat T_Y - \hat R\, \hat T_X\right)
+\hat{V}_p(\hat{R}) \approx
+\frac{1}{\hat{X}_w^2}\,
+\hat{V}_p\!\left(\hat{Y}_w - \hat{R}\,\hat{X}_w\right).
 $$
 
 **Numeric / Numeric:**
@@ -371,7 +513,8 @@ r_ratio <- estimate_survey(
 r_ratio
 ```
 
-**Categorical / Categorical** — e.g. ratio of Formal to Informal workers:
+**Categorical / Categorical** — ratio of Formal to Informal workers
+($\hat{N}_{\text{Formal}} / \hat{N}_{\text{Informal}}$):
 
 ```{r}
 #| label: ratio-cat
@@ -386,7 +529,8 @@ r_ratio_cat <- estimate_survey(
 r_ratio_cat
 ```
 
-**Numeric / Categorical** — e.g. average income among formal workers:
+**Numeric / Categorical** — average income among formal workers,
+equivalent to $\hat{Y}_{\text{income}} / \hat{N}_{\text{Formal}}$:
 
 ```{r}
 #| label: ratio-mixed
@@ -402,22 +546,39 @@ r_ratio_mix
 
 ### Quantiles
 
-Quantiles are defined from the weighted empirical cumulative distribution:
+Quantiles are derived from the **weighted empirical cumulative
+distribution function** [@woodruff1952]:
 
 $$
-\hat F_w(y) = \frac{\sum_{i \in s} w_i\, I(Y_i \le y)}{\sum_{i \in s} w_i}
+\hat{F}_w(t) =
+\frac{\displaystyle\sum_{k \in s} w_k\, I(y_k \le t)}
+     {\displaystyle\sum_{k \in s} w_k}
+= \frac{\hat{N}(y \le t)}{\hat{N}_w}.
 $$
 
-The $p$-th quantile satisfies $\hat F_w(q_p) = p$. Confidence intervals
-are computed using the Woodruff linearization method [@woodruff1952].
+The $p$-th order quantile is defined as:
+
+$$
+\hat{q}_p = \inf\bigl\{t : \hat{F}_w(t) \ge p\bigr\}.
+$$
+
+Confidence intervals are computed using the Woodruff linearization
+method, which transforms the problem to the scale of the cumulative
+proportion:
+
+$$
+IC_p[\hat{q}_p] =
+\left\{t : \hat{F}_w(t) \in
+\left[p \pm t_{1-\alpha/2,\,df}\; ee(\hat{F}_w(t))\right]\right\}.
+$$
 
 ```{r}
 #| label: quantile
 r_quant <- estimate_survey(
-  design   = design,
-  variable = "ingreso_pc",
+  design    = design,
+  variable  = "ingreso_pc",
   estimator = "quantile",
-  probs    = c(0.10, 0.25, 0.50, 0.75, 0.90)
+  probs     = c(0.10, 0.25, 0.50, 0.75, 0.90)
 )
 r_quant
 ```
@@ -426,30 +587,69 @@ r_quant
 
 ## Domain Estimation
 
-Supply the `by` argument to compute estimates within subpopulations.
-Variance estimation correctly accounts for the complex design within
-each domain (no subsetting bias).
+In household surveys it is common to estimate parameters for
+**subpopulations** or **domains** $U_d \subset U$. The weighted ratio
+estimator in domain $d$ is:
+
+$$
+\bar{y}_{w,d} =
+\frac{\displaystyle\sum_{k \in s} w_k\, y_k\, I(k \in U_d)}
+     {\displaystyle\sum_{k \in s} w_k\, I(k \in U_d)}
+= \frac{\hat{Y}_{w,d}}{\hat{N}_{w,d}}.
+$$
+
+Variance estimation is carried out over the full sample $s$, preserving
+the design structure and avoiding subsetting bias [@lumley2010].
+
+### Domain Design Effect
+
+The design effect for domain $d$ is defined analogously to the
+overall DEFF [@kish1965]:
+
+$$
+\widehat{\text{DEFF}}_d =
+\frac{\hat{V}_p(\hat{\theta}_d)}
+     {\hat{V}_{\text{SRS}}(\hat{\theta}_d)},
+$$
+
+where $\hat{V}_{\text{SRS}}(\hat{\theta}_d)$ is the variance that would
+be obtained under SRS restricted to domain $d$. For the domain mean,
+this simplifies to:
+
+$$
+\hat{V}_{\text{SRS}}(\bar{y}_{w,d}) =
+\left(1 - \frac{n_d}{N_d}\right)\frac{S_{y,d}^2}{n_d},
+$$
+
+with $n_d = \sum_{k \in s} I(k \in U_d)$ the domain sample size,
+$N_d \approx \hat{N}_{w,d}$ the estimated domain population size, and
+$S_{y,d}^2$ the unweighted within-domain sample variance. Values
+$\widehat{\text{DEFF}}_d > 1$ indicate that clustering or unequal
+weighting inflate variance even within the domain.
+
+The `by` argument controls estimation domains:
 
 ```{r}
 #| label: domain-mean
 r_region <- estimate_survey(
-  design   = design,
-  variable = "ingreso_pc",
+  design    = design,
+  variable  = "ingreso_pc",
   estimator = "mean",
-  by       = "region"
+  by        = "region"
 )
 r_region
 ```
 
-Multiple domain variables are supported:
+Multiple domain variables are supported (crossed domains
+$U_{d_1} \cap U_{d_2}$):
 
 ```{r}
 #| label: domain-multi
 r_region_area <- estimate_survey(
-  design   = design,
-  variable = "ingreso_pc",
+  design    = design,
+  variable  = "ingreso_pc",
   estimator = "mean",
-  by       = c("region", "area")
+  by        = c("region", "area")
 )
 r_region_area
 ```
@@ -459,10 +659,10 @@ Proportions by domain:
 ```{r}
 #| label: domain-prop
 r_pobre_region <- estimate_survey(
-  design   = design,
-  variable = "pobre",
+  design    = design,
+  variable  = "pobre",
   estimator = "prop",
-  by       = "region"
+  by        = "region"
 )
 r_pobre_region
 ```
@@ -471,8 +671,9 @@ r_pobre_region
 
 ## Formatting Results
 
-`format_results_table()` rounds numeric columns, computes missing CV
-or confidence intervals, and converts `conf_level` to a percentage string.
+`format_results_table()` rounds numeric columns, computes missing $CV$
+or confidence intervals, and ensures the output always contains columns
+`estimate`, `se`, `cv`, `lci`, and `uci`.
 
 ```{r}
 #| label: format
@@ -484,18 +685,20 @@ format_results_table(r_region, digits = 3)
 ## Visualisation
 
 `plot_results_bar()` generates a `ggplot2` bar chart with error bars
-representing the confidence interval. Domain variables are detected
-automatically as any column not in the standard output columns.
+representing the confidence interval
+$[\hat{\theta} - t\, ee(\hat{\theta}),\; \hat{\theta} + t\, ee(\hat{\theta})]$.
+Domain variables are detected automatically as any column not in the
+standard output columns.
 
 ```{r}
 #| label: plot-region
-#| fig-cap: "Per-capita income by region (mean ± 95% CI)"
+#| fig-cap: "Per-capita income by region — $\\bar{y}_{w,d}$ with 95% CI"
 plot_results_bar(r_region)
 ```
 
 ```{r}
 #| label: plot-multi
-#| fig-cap: "Per-capita income by region and area (mean ± 95% CI)"
+#| fig-cap: "Per-capita income by region and area — $\\bar{y}_{w,d}$ with 95% CI"
 plot_results_bar(r_region_area)
 ```
 
@@ -503,7 +706,7 @@ Proportion plots automatically constrain the y-axis to $[0, 1]$:
 
 ```{r}
 #| label: plot-prop
-#| fig-cap: "Poverty rate by region (proportion ± 95% CI)"
+#| fig-cap: "Poverty rate by region — $\\hat{p}_d$ with 95% CI"
 plot_results_bar(r_pobre_region)
 ```
 
@@ -516,9 +719,11 @@ complete analysis pipeline:
 
 1. **Data** — upload CSV / RDS / XLSX or load built-in example data
 2. **Survey design** — choose SRS, stratified, or multistage cluster;
-   select weight, stratum, and PSU variables; view MathJax theory
-3. **Estimation** — select estimator, target variable, and domains;
-   execute and inspect results with precision indicators
+   select weight $w_k$, stratum $h$, and PSU $\alpha$ variables;
+   view MathJax theory
+3. **Estimation** — select estimator ($\bar{y}_w$, $\hat{Y}_w$,
+   $\hat{p}_k$, $\hat{R}$, $\hat{q}_p$), target variable, and domains;
+   execute and inspect results with $CV$-based precision indicators
 
 Launch the application with:
 
@@ -550,7 +755,8 @@ data <- mutate_survey_data(
   )
 )
 
-# 3. Build survey design
+# 3. Build survey design (stratified multistage)
+#    weight = w_k, strata = h, cluster = alpha
 design <- as_survey_design_tbl(
   data    = data,
   weight  = "weight",
@@ -559,10 +765,10 @@ design <- as_survey_design_tbl(
   nest    = TRUE
 )
 
-# 4. Diagnose
+# 4. Diagnose: N_hat, H, PSUs, CV(w)
 describe_survey_design(design)
 
-# 5. Estimate mean by domain and format
+# 5. Estimate domain mean and format
 res <- estimate_survey(
   design    = design,
   variable  = "ingreso_pc",

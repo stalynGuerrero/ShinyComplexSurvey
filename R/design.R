@@ -1,54 +1,134 @@
 #' Create a complex survey design object
 #'
-#' Constructs a survey design object from microdata using sampling weights,
-#' and optionally stratification, clustering (PSU), and finite population
-#' correction (FPC). The output is returned as a \code{tbl_svy} object
-#' compatible with \pkg{srvyr}.
+#' Constructs a \code{tbl_svy} design object from survey microdata by encoding
+#' the sampling structure required for design-based inference: adjusted weights
+#' \eqn{w_k}, stratification variable \eqn{h}, primary sampling units (PSUs)
+#' \eqn{\alpha}, and an optional finite population correction (FPC).
 #'
-#' @param data A tibble containing survey microdata.
-#' @param weight Character. Name of the sampling weight variable.
-#' @param strata Optional character. Name of the stratification variable.
-#' @param cluster Optional character. Name of the cluster (PSU) variable.
-#' @param fpc Optional character. Name of the finite population correction variable.
-#' @param nest Logical. Whether PSUs are nested within strata. Default is \code{TRUE}.
-#' @param check_psu Logical. If TRUE, validates that PSUs are not shared across strata.
+#' Let \eqn{U = \{1,\ldots,N\}} be the finite population and
+#' \eqn{s \subset U} the sample. For each unit \eqn{k \in s}, the
+#' \strong{first-order inclusion probability} is
+#' \eqn{\pi_k = \Pr(k \in s) > 0} and the \strong{basic design weight} is
+#' \eqn{d_k = 1/\pi_k}. The \strong{adjusted weight} \eqn{w_k} stored in
+#' \code{weight} incorporates any non-response or calibration corrections
+#' applied after data collection.
 #'
-#' @return A \code{tbl_svy} object.
+#' @param data A tibble containing survey microdata with one row per
+#'   sampled unit \eqn{k}.
+#' @param weight Character string. Name of the column holding the adjusted
+#'   sampling weights \eqn{w_k}. Must be strictly positive and free of
+#'   \code{NA} values.
+#' @param strata Optional character string. Name of the column identifying
+#'   the stratum \eqn{h \in \{1,\ldots,H\}} to which each unit belongs.
+#'   When supplied, variance is estimated within strata.
+#' @param cluster Optional character string. Name of the column identifying
+#'   the PSU \eqn{\alpha \in \{1,\ldots,\alpha_h\}} within stratum \eqn{h}.
+#'   When \code{NULL}, a single-stage design is assumed (\eqn{\alpha_h = 1}
+#'   for all \eqn{h}).
+#' @param fpc Optional character string. Name of the column holding the
+#'   finite population correction value for each unit, used to reduce
+#'   variance estimates when the sampling fraction \eqn{n/N} is non-negligible.
+#' @param nest Logical. Whether PSU labels are nested within strata, i.e.
+#'   the same PSU code may appear in different strata. Default is \code{TRUE}.
+#'   Set to \code{FALSE} only when PSU identifiers are globally unique.
+#' @param check_psu Logical. If \code{TRUE} (default), emits a warning when
+#'   PSUs appear in more than one stratum and \code{nest = FALSE}, which may
+#'   indicate a labelling inconsistency.
+#'
+#' @return
+#' A \code{tbl_svy} object (class from \pkg{srvyr}) compatible with
+#' \pkg{srvyr} and \pkg{survey} functions. The object carries a
+#' \code{"design_vars"} attribute that records \code{weight}, \code{strata},
+#' \code{cluster}, \code{fpc} and \code{nest} for downstream diagnostics.
 #'
 #' @details
-#' The function wraps \code{survey::svydesign()} and converts the result
-#' to a \code{srvyr} object using \code{srvyr::as_survey()}.
+#' The function wraps \code{survey::svydesign()} and converts the result to
+#' a \pkg{srvyr} object via \code{srvyr::as_survey()}.
 #'
-#' Supported configurations:
-#' \itemize{
-#'   \item Simple random sampling (weights only)
-#'   \item Stratified designs
-#'   \item Clustered designs
-#'   \item Stratified multistage designs
-#'   \item Designs with finite population correction (FPC)
+#' \strong{Supported design configurations}
+#'
+#' \tabular{ll}{
+#'   \strong{Configuration} \tab \strong{Arguments supplied} \cr
+#'   Simple random sampling (SRS) \tab \code{weight} only \cr
+#'   Stratified \tab \code{weight} + \code{strata} \cr
+#'   Single-stage cluster \tab \code{weight} + \code{cluster} \cr
+#'   Stratified multistage \tab \code{weight} + \code{strata} + \code{cluster} \cr
+#'   Any of the above with FPC \tab add \code{fpc} \cr
 #' }
 #'
-#' If \code{cluster = NULL}, a single-stage design is assumed.
+#' \strong{Design weights and inclusion probabilities}
+#'
+#' For a stratified multistage design with \eqn{H} strata and
+#' \eqn{\alpha_h} PSUs in stratum \eqn{h}, the Horvitz--Thompson (HT)
+#' estimator of the population total is:
+#'
+#' \deqn{
+#'   \hat{Y}_{HT} =
+#'   \sum_{h=1}^{H}\sum_{\alpha=1}^{\alpha_h}\sum_{k=1}^{n_{h\alpha}}
+#'   \omega_{h\alpha k}\, y_{h\alpha k},
+#' }
+#'
+#' where \eqn{\omega_{h\alpha k}} are the adjusted weights of unit \eqn{k}
+#' in PSU \eqn{\alpha} of stratum \eqn{h}. The resulting \code{tbl_svy}
+#' object encodes this structure so that all subsequent calls to
+#' \code{\link{estimate_survey}} use the correct design-based variance
+#' estimator \eqn{\hat{V}_p(\hat{Y}_{HT})}.
+#'
+#' \strong{Lonely PSU handling}
+#'
+#' When a stratum \eqn{h} contains only one PSU (\eqn{\alpha_h = 1}),
+#' the within-stratum variance cannot be estimated by Taylor linearization.
+#' The function automatically sets
+#' \code{options(survey.lonely.psu = "adjust")} so that variance is
+#' approximated by centering the PSU total at the stratum mean, following
+#' the conservative recommendation of Cochran (1977).
+#'
+#' \strong{Finite population correction}
+#'
+#' When the sampling fraction \eqn{f_h = n_h / N_h} is non-negligible
+#' (typically \eqn{> 5\%}), supply \code{fpc} to reduce variance estimates
+#' by the factor \eqn{(1 - f_h)}.
+#'
+#' @seealso
+#' \code{\link{describe_survey_design}},
+#' \code{\link{estimate_survey}},
+#' \code{\link[survey]{svydesign}},
+#' \code{\link[srvyr]{as_survey}}
+#'
+#' @references
+#' Horvitz, D. G. & Thompson, D. J. (1952). A generalization of sampling
+#' without replacement from a finite universe. \emph{Journal of the American
+#' Statistical Association}, 47(260), 663--685.
+#' \doi{10.1080/01621459.1952.10483446}
+#'
+#' Cochran, W. G. (1977). \emph{Sampling Techniques} (3rd ed.). Wiley.
+#'
+#' Sarndal, C.-E., Swensson, B. & Wretman, J. (1992).
+#' \emph{Model Assisted Survey Sampling}. Springer.
+#' \doi{10.1007/978-1-4612-4378-6}
+#'
+#' Lumley, T. (2010). \emph{Complex Surveys: A Guide to Analysis Using R}.
+#' Wiley. \doi{10.1002/9780470580066}
 #'
 #' @examples
 #' data <- generate_example_data(n_upm = 30)
 #'
-#' # Full design
+#' # Stratified multistage design: weight = w_k, strata = h, cluster = alpha
 #' design <- as_survey_design_tbl(
 #'   data,
-#'   weight = "weight",
-#'   strata = "strata",
+#'   weight  = "weight",
+#'   strata  = "strata",
 #'   cluster = "upm"
 #' )
 #'
-#' # Without stratification
+#' # Cluster design without stratification (H = 1)
 #' design2 <- as_survey_design_tbl(
 #'   data,
-#'   weight = "weight",
+#'   weight  = "weight",
 #'   cluster = "upm"
 #' )
 #'
-#' # Weights only (SRS approximation)
+#' # Weights-only design (SRS approximation, d_k = w_k)
 #' design3 <- as_survey_design_tbl(
 #'   data,
 #'   weight = "weight"
@@ -171,21 +251,46 @@ as_survey_design_tbl <- function(
 
 #' Describe a complex survey design
 #'
-#' Provides basic diagnostics for a complex survey design, including
-#' sample size, number of strata and clusters, and summary statistics
-#' of sampling weights.
+#' Returns a one-row tibble of design diagnostics: sample size \eqn{n},
+#' number of strata \eqn{H}, total number of PSUs \eqn{\sum_h \alpha_h},
+#' and summary statistics of the adjusted weights \eqn{w_k} including their
+#' coefficient of variation \eqn{CV(w) = s_w / \bar{w}}, which is an
+#' indicator of weight variability and its effect on variance inflation.
 #'
-#' @param design A \code{tbl_svy} object.
+#' @param design A \code{tbl_svy} object created with
+#'   \code{\link{as_survey_design_tbl}}.
 #'
-#' @return A tibble with design diagnostics.
+#' @return
+#' A tibble with one row and the following columns:
+#'
+#' \describe{
+#'   \item{\code{n_obs}}{Total sample size \eqn{n = |s|}.}
+#'   \item{\code{n_strata}}{Number of strata \eqn{H}
+#'     (\code{NA} if no stratification variable was supplied).}
+#'   \item{\code{n_clusters}}{Total number of PSUs
+#'     \eqn{\sum_{h=1}^{H} \alpha_h}
+#'     (\code{NA} if no cluster variable was supplied).}
+#'   \item{\code{weight_min}}{\eqn{\min_{k \in s} w_k}.}
+#'   \item{\code{weight_max}}{\eqn{\max_{k \in s} w_k}.}
+#'   \item{\code{weight_mean}}{Unweighted mean of the adjusted weights
+#'     \eqn{\bar{w} = \hat{N}_w / n}, where
+#'     \eqn{\hat{N}_w = \sum_{k \in s} w_k}.}
+#'   \item{\code{weight_cv}}{Coefficient of variation of the weights
+#'     \eqn{CV(w) = s_w / \bar{w}}. Large values (\eqn{> 0.5}) indicate
+#'     high weight variability, which can substantially inflate the
+#'     design effect \eqn{\widehat{\mathrm{DEFF}}}.}
+#' }
+#'
+#' @seealso \code{\link{as_survey_design_tbl}}, \code{\link{estimate_survey}}
+#'
 #' @export
 #'
 #' @examples
 #' data <- generate_example_data(30)
 #' design <- as_survey_design_tbl(
 #'   data,
-#'   weight = "weight",
-#'   strata = "strata",
+#'   weight  = "weight",
+#'   strata  = "strata",
 #'   cluster = "upm"
 #' )
 #' describe_survey_design(design)

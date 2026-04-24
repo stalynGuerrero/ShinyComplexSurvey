@@ -3,7 +3,7 @@ mod_estimacion_ui <- function(id) {
 
   shiny::fluidPage(
 
-    shiny::h3("Estimación"),
+    shiny::h3("Estimaci\u00f3n"),
     shiny::hr(),
 
     shiny::fluidRow(
@@ -12,25 +12,25 @@ mod_estimacion_ui <- function(id) {
         3,
         shiny::wellPanel(
 
-          shiny::h4("Parámetros"),
+          shiny::h4("Par\u00e1metros"),
 
           # =====================================================
-          # Tipo de estimación
+          # Tipo de estimaci\u00f3n
           # =====================================================
           shiny::selectInput(
             inputId = ns("estimator"),
-            label   = "Tipo de estimación",
+            label   = "Tipo de estimaci\u00f3n",
             choices = c(
               "Media"      = "mean",
               "Total"      = "total",
-              "Proporción" = "prop",
-              "Razón"      = "ratio",
+              "Proporci\u00f3n" = "prop",
+              "Raz\u00f3n"      = "ratio",
               "Cuantiles"  = "quantile"
             )
           ),
 
           # =====================================================
-          # RAZÓN
+          # RAZ\u00d3N
           # =====================================================
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'ratio'", ns("estimator")),
@@ -64,14 +64,14 @@ mod_estimacion_ui <- function(id) {
           ),
 
           # =====================================================
-          # VARIABLE DE INTERÉS
+          # VARIABLE DE INTER\u00c9S
           # =====================================================
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] != 'ratio'", ns("estimator")),
 
             shiny::selectInput(
               inputId = ns("y_var"),
-              label   = "Variable de interés",
+              label   = "Variable de inter\u00e9s",
               choices = NULL
             )
           ),
@@ -87,11 +87,11 @@ mod_estimacion_ui <- function(id) {
           ),
 
           # =====================================================
-          # BOTÓN
+          # BOT\u00d3N
           # =====================================================
           shiny::actionButton(
             inputId = ns("run"),
-            label   = "Ejecutar estimación",
+            label   = "Ejecutar estimaci\u00f3n",
             class   = "btn-primary"
           )
         )
@@ -101,12 +101,12 @@ mod_estimacion_ui <- function(id) {
         9,
         shiny::wellPanel(
 
-          shiny::h4("Marco teórico"),
+          shiny::h4("Marco te\u00f3rico"),
           shiny::uiOutput(ns("theory_box")),
 
           shiny::hr(),
 
-          shiny::h4("Estado de la estimación"),
+          shiny::h4("Estado de la estimaci\u00f3n"),
           shiny::verbatimTextOutput(ns("log")),
 
           shiny::hr(),

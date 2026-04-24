@@ -82,4 +82,6 @@ utils::globalVariables(c(
 #' @importFrom utils head
 #' @importFrom magrittr %>%
 #' @importFrom dplyr n_distinct
+#' @importFrom shiny req observeEvent updateSelectInput
+#' @importFrom tidyselect where
 NULL
