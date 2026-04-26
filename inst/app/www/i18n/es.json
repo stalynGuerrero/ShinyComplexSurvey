@@ -1,17 +1,131 @@
 {
+  "lang": "es",
   "mod_datos": {
     "title": "Carga y validación de datos",
     "input_panel": "Entrada de datos",
     "file_label": "Archivo de datos",
     "example_btn": "Cargar datos de ejemplo",
     "preview": "Vista previa",
-    "log": "Registro"
+    "log": "Registro",
+    "source_card": "Fuente de datos",
+    "preview_card": "Vista previa",
+    "status": "Estado",
+    "no_data": "No se han cargado datos.",
+    "log_rows": "filas",
+    "log_cols": "columnas",
+    "log_vars": "variables"
+  },
+  "mod_diseno": {
+    "title": "Diseño muestral",
+    "subtitle": "Define la estructura del muestreo complejo",
+    "params_card": "Parámetros del diseño",
+    "design_type": "Tipo de diseño",
+    "srs": "Simple (SRS)",
+    "stratified": "Estratificado",
+    "cluster": "Conglomerados / Multietápico",
+    "build_btn": "Construir diseño",
+    "results_card": "Resultados",
+    "design_summary": "Resumen del diseño",
+    "r_code": "Código en R",
+    "diagnostic": "Diagnóstico",
+    "weight_var": "Peso muestral",
+    "strata_var": "Variable de estrato",
+    "n_stages": "Número de etapas",
+    "strata": "Estrato",
+    "lonely_psu": "Estrategia para UPM único",
+    "lonely_adjust": "Ajuste conservador",
+    "lonely_average": "Promedio del estrato",
+    "lonely_certainty": "Certidumbre",
+    "cluster_stage": "Conglomerado etapa",
+    "none": "Ninguno",
+    "error_build": "Error al construir el diseño:",
+    "theory": {
+      "srs": {
+        "title": "Muestreo Aleatorio Simple (SRS)",
+        "desc": "Cada unidad de la población tiene la misma probabilidad de ser seleccionada.",
+        "estimator_h": "Estimador de la media poblacional",
+        "variance_h": "Varianza del estimador",
+        "yi_desc": "\\(y_i\\): valor observado de la variable para la unidad \\(i\\).",
+        "n_desc": "\\(n\\): tamaño de la muestra.",
+        "N_desc": "\\(N\\): tamaño de la población.",
+        "S2_desc": "\\(S^2\\): varianza poblacional de la variable de interés."
+      },
+      "stratified": {
+        "title": "Muestreo Estratificado",
+        "desc": "La población se divide en subgrupos homogéneos llamados estratos.",
+        "estimator_h": "Estimador de la media estratificada",
+        "variance_h": "Varianza del estimador",
+        "H_desc": "\\(H\\): número total de estratos.",
+        "Wh_desc": "\\(W_h = N_h/N\\): peso poblacional del estrato \\(h\\).",
+        "nh_desc": "\\(n_h\\): tamaño de muestra en el estrato \\(h\\).",
+        "S2h_desc": "\\(S_h^2\\): varianza dentro del estrato \\(h\\)."
+      },
+      "cluster": {
+        "title": "Muestreo por Conglomerados / Multietápico",
+        "desc": "Las unidades se seleccionan en grupos llamados conglomerados o UPM.",
+        "estimator_h": "Estimador de Horvitz-Thompson",
+        "variance_h": "Varianza del estimador",
+        "pi_desc": "\\(\\pi_i\\): probabilidad de inclusión de la unidad \\(i\\).",
+        "piij_desc": "\\(\\pi_{ij}\\): probabilidad conjunta de inclusión de \\(i\\) y \\(j\\).",
+        "wi_desc": "\\(1/\\pi_i\\): peso muestral de la unidad \\(i\\)."
+      }
+    }
+  },
+  "mod_estimacion": {
+    "title": "Estimación",
+    "subtitle": "Calcula estadísticas con corrección por diseño muestral complejo",
+    "params_card": "Parámetros",
+    "estimator_label": "Tipo de estimación",
+    "mean": "Media",
+    "total": "Total",
+    "prop": "Proporción",
+    "ratio": "Razón",
+    "quantile": "Cuantiles",
+    "numerator": "Numerador",
+    "denominator": "Denominador",
+    "probs": "Cuantiles (ej: 0.25, 0.5, 0.75)",
+    "y_var": "Variable de interés",
+    "domain_vars": "Dominio(s) (opcional)",
+    "run_btn": "Ejecutar estimación",
+    "results_card": "Resultados",
+    "theory_title": "Marco teórico",
+    "status_title": "Estado de la estimación",
+    "result_title": "Resultado",
+    "quality_title": "Indicadores de calidad",
+    "not_run": "La estimación aún no ha sido ejecutada.",
+    "global": "Global",
+    "ratio_num_level": "Categoría (numerador)",
+    "ratio_den_level": "Categoría (denominador)",
+    "none": "Ninguno",
+    "select_theory": "Seleccione un estimador para visualizar su marco teórico.",
+    "var_interes": "variable_interes",
+    "tipo_est": "tipo_estimacion",
+    "dominios": "dominios"
   },
   "app": {
+    "footer": "Desarrollado con R Shiny · ",
+    "exit_btn": "Salir",
     "tabs": {
+      "portada": "Inicio",
       "datos": "Datos",
       "diseno": "Diseño muestral",
       "estimacion": "Estimación"
+    }
+  },
+  "cover": {
+    "desc": "Análisis estadístico de encuestas de muestreo complejo. Define diseños muestrales, estima indicadores con corrección por diseño y visualiza resultados con medidas de incertidumbre, sin escribir código.",
+    "btn": "Comenzar",
+    "feat1": {
+      "title": "Carga de datos",
+      "desc": "Importa archivos CSV, RDS o XLSX. Explora de inmediato con el conjunto de datos de ejemplo integrado."
+    },
+    "feat2": {
+      "title": "Diseño muestral",
+      "desc": "Configura diseños SRS, estratificados y multietápicos con pesos de expansión y corrección de población finita."
+    },
+    "feat3": {
+      "title": "Estimación",
+      "desc": "Calcula medias, totales, proporciones y cuantiles por dominio, con IC, error estándar y coeficiente de variación."
     }
   }
 }

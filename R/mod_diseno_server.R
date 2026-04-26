@@ -1,101 +1,138 @@
-mod_diseno_server <- function(id, data) {
+mod_diseno_server <- function(id, data, dict) {
 
   shiny::moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
 
     # -------------------------------------------------
-    # 1. Teor\u00eda del dise\u00f1o (MathJax)
+    # 0. Static labels
+    # -------------------------------------------------
+    output$title          <- shiny::renderText({ i18n_t(dict(), "mod_diseno.title") })
+    output$subtitle       <- shiny::renderText({ i18n_t(dict(), "mod_diseno.subtitle") })
+    output$params_card    <- shiny::renderText({ i18n_t(dict(), "mod_diseno.params_card") })
+    output$build_btn      <- shiny::renderText({ i18n_t(dict(), "mod_diseno.build_btn") })
+    output$results_card   <- shiny::renderText({ i18n_t(dict(), "mod_diseno.results_card") })
+    output$design_summary <- shiny::renderText({ i18n_t(dict(), "mod_diseno.design_summary") })
+    output$r_code         <- shiny::renderText({ i18n_t(dict(), "mod_diseno.r_code") })
+    output$diagnostic     <- shiny::renderText({ i18n_t(dict(), "mod_diseno.diagnostic") })
+
+    # -------------------------------------------------
+    # 0b. Update selectInput choices when language changes
+    # -------------------------------------------------
+    shiny::observe({
+      d <- dict()
+      shiny::updateSelectInput(session, "design_type",
+        label   = i18n_t(d, "mod_diseno.design_type"),
+        choices = stats::setNames(
+          c("srs", "stratified", "cluster"),
+          c(i18n_t(d, "mod_diseno.srs"),
+            i18n_t(d, "mod_diseno.stratified"),
+            i18n_t(d, "mod_diseno.cluster"))
+        )
+      )
+    })
+
+    # -------------------------------------------------
+    # 1. Theory panel (MathJax)
     # -------------------------------------------------
     output$design_theory <- shiny::renderUI({
 
       shiny::req(input$design_type)
+      d <- dict()
 
       switch(
         input$design_type,
 
         "srs" = shiny::tagList(
           shiny::withMathJax(),
-          shiny::h5("Muestreo Aleatorio Simple (SRS)"),
-          shiny::p("Cada unidad de la poblaci\u00f3n tiene la misma probabilidad de ser seleccionada."),
-          shiny::h6("Estimador de la media poblacional"),
+          shiny::h5(i18n_t(d, "mod_diseno.theory.srs.title")),
+          shiny::p(i18n_t(d, "mod_diseno.theory.srs.desc")),
+          shiny::h6(i18n_t(d, "mod_diseno.theory.srs.estimator_h")),
           shiny::HTML("$$ \\hat{\\bar{Y}} = \\frac{1}{n} \\sum_{i=1}^{n} y_i $$"),
-          shiny::h6("Varianza del estimador"),
+          shiny::h6(i18n_t(d, "mod_diseno.theory.srs.variance_h")),
           shiny::HTML("$$ Var(\\hat{\\bar{Y}}) = \\left(1-\\frac{n}{N}\\right)\\frac{S^2}{n} $$"),
           shiny::tags$ul(
-            shiny::tags$li(shiny::HTML("\\(y_i\\): valor observado de la variable para la unidad \\(i\\).")),
-            shiny::tags$li(shiny::HTML("\\(n\\): tama\u00f1o de la muestra.")),
-            shiny::tags$li(shiny::HTML("\\(N\\): tama\u00f1o de la poblaci\u00f3n.")),
-            shiny::tags$li(shiny::HTML("\\(S^2\\): varianza poblacional de la variable de inter\u00e9s."))
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.srs.yi_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.srs.n_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.srs.N_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.srs.S2_desc")))
           )
         ),
 
         "stratified" = shiny::tagList(
           shiny::withMathJax(),
-          shiny::h5("Muestreo Estratificado"),
-          shiny::p("La poblaci\u00f3n se divide en subgrupos homog\u00e9neos llamados estratos."),
-          shiny::h6("Estimador de la media estratificada"),
+          shiny::h5(i18n_t(d, "mod_diseno.theory.stratified.title")),
+          shiny::p(i18n_t(d, "mod_diseno.theory.stratified.desc")),
+          shiny::h6(i18n_t(d, "mod_diseno.theory.stratified.estimator_h")),
           shiny::HTML("$$ \\hat{\\bar{Y}}_{st} = \\sum_{h=1}^{H} W_h \\bar{y}_h $$"),
-          shiny::h6("Varianza del estimador"),
+          shiny::h6(i18n_t(d, "mod_diseno.theory.stratified.variance_h")),
           shiny::HTML("$$ Var(\\hat{\\bar{Y}}_{st}) = \\sum_{h=1}^{H} W_h^2 \\left(1-\\frac{n_h}{N_h}\\right) \\frac{S_h^2}{n_h} $$"),
           shiny::tags$ul(
-            shiny::tags$li(shiny::HTML("\\(H\\): n\u00famero total de estratos.")),
-            shiny::tags$li(shiny::HTML("\\(W_h = N_h/N\\): peso poblacional del estrato \\(h\\).")),
-            shiny::tags$li(shiny::HTML("\\(n_h\\): tama\u00f1o de muestra en el estrato \\(h\\).")),
-            shiny::tags$li(shiny::HTML("\\(S_h^2\\): varianza dentro del estrato \\(h\\)."))
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.stratified.H_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.stratified.Wh_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.stratified.nh_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.stratified.S2h_desc")))
           )
         ),
 
         "cluster" = shiny::tagList(
           shiny::withMathJax(),
-          shiny::h5("Muestreo por Conglomerados / Multiet\u00e1pico"),
-          shiny::p("Las unidades se seleccionan en grupos llamados conglomerados o UPM."),
-          shiny::h6("Estimador de Horvitz\u2013Thompson"),
+          shiny::h5(i18n_t(d, "mod_diseno.theory.cluster.title")),
+          shiny::p(i18n_t(d, "mod_diseno.theory.cluster.desc")),
+          shiny::h6(i18n_t(d, "mod_diseno.theory.cluster.estimator_h")),
           shiny::HTML("$$ \\hat{Y} = \\sum_{i \\in s} \\frac{y_i}{\\pi_i} $$"),
-          shiny::h6("Varianza del estimador"),
+          shiny::h6(i18n_t(d, "mod_diseno.theory.cluster.variance_h")),
           shiny::HTML("$$ Var(\\hat{Y}) = \\sum_i \\sum_j \\left(\\frac{\\pi_{ij}-\\pi_i\\pi_j}{\\pi_{ij}}\\right) \\frac{y_i}{\\pi_i} \\frac{y_j}{\\pi_j} $$"),
           shiny::tags$ul(
-            shiny::tags$li(shiny::HTML("\\(\\pi_i\\): probabilidad de inclusi\u00f3n de la unidad \\(i\\).")),
-            shiny::tags$li(shiny::HTML("\\(\\pi_{ij}\\): probabilidad conjunta de inclusi\u00f3n de \\(i\\) y \\(j\\).")),
-            shiny::tags$li(shiny::HTML("\\(1/\\pi_i\\): peso muestral de la unidad \\(i\\)."))
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.cluster.pi_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.cluster.piij_desc"))),
+            shiny::tags$li(shiny::HTML(i18n_t(d, "mod_diseno.theory.cluster.wi_desc")))
           )
         )
       )
     })
 
     # -------------------------------------------------
-    # 2. Argumentos din\u00e1micos del dise\u00f1o
+    # 2. Dynamic design arguments
     # -------------------------------------------------
     output$design_arguments <- shiny::renderUI({
 
       shiny::req(data())
-
       vars <- names(data())
+      d    <- dict()
 
       switch(
         input$design_type,
 
         "srs" = shiny::tagList(
-          shiny::selectInput(ns("weight_var"), "Peso muestral", choices = vars)
+          shiny::selectInput(ns("weight_var"),
+            i18n_t(d, "mod_diseno.weight_var"), choices = vars)
         ),
 
         "stratified" = shiny::tagList(
-          shiny::selectInput(ns("strata_var"),  "Variable de estrato", choices = vars),
-          shiny::selectInput(ns("weight_var"),  "Peso muestral",       choices = vars)
+          shiny::selectInput(ns("strata_var"),
+            i18n_t(d, "mod_diseno.strata_var"), choices = vars),
+          shiny::selectInput(ns("weight_var"),
+            i18n_t(d, "mod_diseno.weight_var"), choices = vars)
         ),
 
         "cluster" = shiny::tagList(
-          shiny::numericInput(ns("n_stages"), "N\u00famero de etapas", value = 2, min = 1, max = 5),
+          shiny::numericInput(ns("n_stages"),
+            i18n_t(d, "mod_diseno.n_stages"), value = 2, min = 1, max = 5),
           shiny::uiOutput(ns("stage_clusters")),
-          shiny::selectInput(ns("strata_var"), "Estrato", choices = c("Ninguno" = "", vars)),
-          shiny::selectInput(ns("weight_var"), "Peso muestral", choices = vars),
+          shiny::selectInput(ns("strata_var"),
+            i18n_t(d, "mod_diseno.strata"),
+            choices = c(stats::setNames("", i18n_t(d, "mod_diseno.none")), vars)),
+          shiny::selectInput(ns("weight_var"),
+            i18n_t(d, "mod_diseno.weight_var"), choices = vars),
           shiny::selectInput(
             ns("lonely_psu"),
-            "Estrategia para UPM \u00fanico",
-            choices = c(
-              "Ajuste conservador" = "adjust",
-              "Promedio del estrato" = "average",
-              "Certidumbre"         = "certainty"
+            i18n_t(d, "mod_diseno.lonely_psu"),
+            choices = stats::setNames(
+              c("adjust", "average", "certainty"),
+              c(i18n_t(d, "mod_diseno.lonely_adjust"),
+                i18n_t(d, "mod_diseno.lonely_average"),
+                i18n_t(d, "mod_diseno.lonely_certainty"))
             ),
             selected = "adjust"
           )
@@ -104,25 +141,25 @@ mod_diseno_server <- function(id, data) {
     })
 
     # -------------------------------------------------
-    # 3. Etapas din\u00e1micas (cluster multiet\u00e1pico)
+    # 3. Dynamic stage cluster inputs
     # -------------------------------------------------
     output$stage_clusters <- shiny::renderUI({
 
       shiny::req(input$n_stages, data())
-
       vars <- names(data())
+      d    <- dict()
 
       lapply(seq_len(input$n_stages), function(i) {
         shiny::selectInput(
           ns(paste0("cluster_stage_", i)),
-          paste("Conglomerado etapa", i),
+          paste(i18n_t(d, "mod_diseno.cluster_stage"), i),
           choices = vars
         )
       })
     })
 
     # -------------------------------------------------
-    # 4. Funci\u00f3n limpieza de inputs
+    # 4. Helper
     # -------------------------------------------------
     clean_input <- function(x) {
       if (is.null(x) || length(x) == 0 || nchar(trimws(x)) == 0) return(NULL)
@@ -130,7 +167,7 @@ mod_diseno_server <- function(id, data) {
     }
 
     # -------------------------------------------------
-    # 5. Log reactivo
+    # 5. Reactive log
     # -------------------------------------------------
     log_design <- shiny::reactiveVal(NULL)
 
@@ -139,7 +176,7 @@ mod_diseno_server <- function(id, data) {
     }, ignoreInit = TRUE)
 
     # -------------------------------------------------
-    # 6. Construcci\u00f3n del dise\u00f1o
+    # 6. Build design
     # -------------------------------------------------
     design_r <- shiny::eventReactive(input$build, {
 
@@ -166,7 +203,6 @@ mod_diseno_server <- function(id, data) {
 
         } else {
 
-          # cluster / multiet\u00e1pico
           clusters <- sapply(
             seq_len(input$n_stages),
             function(i) input[[paste0("cluster_stage_", i)]]
@@ -182,7 +218,6 @@ mod_diseno_server <- function(id, data) {
             ", weights=~", weight, ", nest=TRUE, data=data)"
           )
 
-          # Build via as_survey_design_tbl with first-stage cluster
           as_survey_design_tbl(
             data    = df,
             weight  = weight,
@@ -202,7 +237,7 @@ mod_diseno_server <- function(id, data) {
 
       }, error = function(e) {
         shiny::showNotification(
-          paste("Error al construir el dise\u00f1o:", conditionMessage(e)),
+          paste(i18n_t(dict(), "mod_diseno.error_build"), conditionMessage(e)),
           type = "error", duration = 8
         )
         NULL
@@ -211,7 +246,7 @@ mod_diseno_server <- function(id, data) {
     }, ignoreInit = TRUE)
 
     # -------------------------------------------------
-    # 7. C\u00f3digo del dise\u00f1o en R
+    # 7. R code output
     # -------------------------------------------------
     output$design_code <- shiny::renderText({
       shiny::req(log_design())
@@ -219,14 +254,14 @@ mod_diseno_server <- function(id, data) {
     })
 
     # -------------------------------------------------
-    # 8. Log del dise\u00f1o
+    # 8. Design log
     # -------------------------------------------------
     output$log <- shiny::renderPrint({
       log_design()
     })
 
     # -------------------------------------------------
-    # 9. Resumen diagn\u00f3stico
+    # 9. Diagnostic table
     # -------------------------------------------------
     output$summary <- shiny::renderTable({
       shiny::req(design_r())
@@ -237,7 +272,7 @@ mod_diseno_server <- function(id, data) {
     }, digits = 2)
 
     # -------------------------------------------------
-    # 10. Salida del m\u00f3dulo
+    # 10. Module output
     # -------------------------------------------------
     return(list(
       design = shiny::reactive({ design_r() })

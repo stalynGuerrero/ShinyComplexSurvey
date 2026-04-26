@@ -25,9 +25,33 @@ app_server <- function(input, output, session) {
   # =========================
   # Tabs traducidos
   # =========================
+  output$tab_portada    <- shiny::renderText({ i18n_t(dict(), "app.tabs.portada") })
   output$tab_datos      <- shiny::renderText({ i18n_t(dict(), "app.tabs.datos") })
   output$tab_diseno     <- shiny::renderText({ i18n_t(dict(), "app.tabs.diseno") })
   output$tab_estimacion <- shiny::renderText({ i18n_t(dict(), "app.tabs.estimacion") })
+
+  # =========================
+  # Portada: textos reactivos
+  # =========================
+  output$cover_desc       <- shiny::renderText({ i18n_t(dict(), "cover.desc") })
+  output$cover_btn        <- shiny::renderText({ i18n_t(dict(), "cover.btn") })
+  output$cover_feat1_title <- shiny::renderText({ i18n_t(dict(), "cover.feat1.title") })
+  output$cover_feat1_desc  <- shiny::renderText({ i18n_t(dict(), "cover.feat1.desc") })
+  output$cover_feat2_title <- shiny::renderText({ i18n_t(dict(), "cover.feat2.title") })
+  output$cover_feat2_desc  <- shiny::renderText({ i18n_t(dict(), "cover.feat2.desc") })
+  output$cover_feat3_title <- shiny::renderText({ i18n_t(dict(), "cover.feat3.title") })
+  output$cover_feat3_desc  <- shiny::renderText({ i18n_t(dict(), "cover.feat3.desc") })
+
+  output$app_footer <- shiny::renderText({ i18n_t(dict(), "app.footer") })
+  output$btn_exit   <- shiny::renderText({ i18n_t(dict(), "app.exit_btn") })
+
+  shiny::observeEvent(input$exit_app, {
+    shiny::stopApp()
+  })
+
+  shiny::observeEvent(input$go_to_datos, {
+    shiny::updateNavbarPage(session, "navbar", selected = "datos")
+  })
 
   # =========================
   # Módulo: Datos
@@ -37,10 +61,10 @@ app_server <- function(input, output, session) {
   # =========================
   # Módulo: Diseño muestral
   # =========================
-  diseno_res <- mod_diseno_server("diseno", datos_res$data)
+  diseno_res <- mod_diseno_server("diseno", datos_res$data, dict)
 
   # =========================
   # Módulo: Estimación
   # =========================
-  mod_estimacion_server("estimacion", diseno_res$design)
+  mod_estimacion_server("estimacion", diseno_res$design, dict)
 }
