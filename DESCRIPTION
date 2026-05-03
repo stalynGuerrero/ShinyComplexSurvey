@@ -38,6 +38,7 @@ Imports:
     magrittr,
     ggplot2,
     jsonlite,
+    writexl,
     DT,
     tidyselect
 Suggests:

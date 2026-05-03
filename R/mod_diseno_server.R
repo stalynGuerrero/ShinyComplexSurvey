@@ -7,14 +7,16 @@ mod_diseno_server <- function(id, data, dict) {
     # -------------------------------------------------
     # 0. Static labels
     # -------------------------------------------------
-    output$title          <- shiny::renderText({ i18n_t(dict(), "mod_diseno.title") })
-    output$subtitle       <- shiny::renderText({ i18n_t(dict(), "mod_diseno.subtitle") })
-    output$params_card    <- shiny::renderText({ i18n_t(dict(), "mod_diseno.params_card") })
-    output$build_btn      <- shiny::renderText({ i18n_t(dict(), "mod_diseno.build_btn") })
-    output$results_card   <- shiny::renderText({ i18n_t(dict(), "mod_diseno.results_card") })
-    output$design_summary <- shiny::renderText({ i18n_t(dict(), "mod_diseno.design_summary") })
-    output$r_code         <- shiny::renderText({ i18n_t(dict(), "mod_diseno.r_code") })
-    output$diagnostic     <- shiny::renderText({ i18n_t(dict(), "mod_diseno.diagnostic") })
+    output$title             <- shiny::renderText({ i18n_t(dict(), "mod_diseno.title") })
+    output$subtitle          <- shiny::renderText({ i18n_t(dict(), "mod_diseno.subtitle") })
+    output$params_card       <- shiny::renderText({ i18n_t(dict(), "mod_diseno.params_card") })
+    output$build_btn         <- shiny::renderText({ i18n_t(dict(), "mod_diseno.build_btn") })
+    output$results_card      <- shiny::renderText({ i18n_t(dict(), "mod_diseno.results_card") })
+    output$design_summary    <- shiny::renderText({ i18n_t(dict(), "mod_diseno.design_summary") })
+    output$r_code            <- shiny::renderText({ i18n_t(dict(), "mod_diseno.r_code") })
+    output$diagnostic        <- shiny::renderText({ i18n_t(dict(), "mod_diseno.diagnostic") })
+    output$lbl_tab_config    <- shiny::renderText({ i18n_t(dict(), "mod_diseno.tab_config") })
+    output$lbl_tab_variables <- shiny::renderText({ i18n_t(dict(), "mod_diseno.tab_variables") })
 
     # -------------------------------------------------
     # 0b. Update selectInput choices when language changes
@@ -272,10 +274,15 @@ mod_diseno_server <- function(id, data, dict) {
     }, digits = 2)
 
     # -------------------------------------------------
-    # 10. Module output
+    # 10. Variables sub-module (wired after design is built)
+    # -------------------------------------------------
+    vars_res <- mod_variables_server("variables", design_r, dict)
+
+    # -------------------------------------------------
+    # 11. Module output: design with all derived variables
     # -------------------------------------------------
     return(list(
-      design = shiny::reactive({ design_r() })
+      design = vars_res$design
     ))
 
   })

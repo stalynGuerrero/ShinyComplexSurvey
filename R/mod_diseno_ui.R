@@ -4,56 +4,96 @@ mod_diseno_ui <- function(id) {
 
   shiny::fluidPage(
 
-    shiny::h3("Dise\u00f1o muestral"),
-    shiny::hr(),
+    # Encabezado del módulo
+    shiny::div(
+      style = "margin-bottom:16px;",
+      shiny::h3(shiny::textOutput(ns("title"), inline = TRUE)),
+      shiny::tags$p(
+        shiny::textOutput(ns("subtitle"), inline = TRUE),
+        style = "color:#4A6572; font-size:13px; margin-top:4px;"
+      )
+    ),
 
-    shiny::fluidRow(
+    shiny::tabsetPanel(
+      id   = ns("diseno_tabs"),
+      type = "tabs",
 
-      shiny::column(
-        4,
-        shiny::wellPanel(
+      # ============================================================
+      # Sub-pestaña 1: Configurar diseño
+      # ============================================================
+      shiny::tabPanel(
+        title = shiny::tagList(
+          shiny::tags$i(class = "fa fa-cogs"),
+          " ",
+          shiny::textOutput(ns("lbl_tab_config"), inline = TRUE)
+        ),
+        value = "config",
 
-          shiny::h4("Definici\u00f3n del dise\u00f1o"),
+        shiny::br(),
 
-          shiny::selectInput(
-            ns("design_type"),
-            "Tipo de dise\u00f1o",
-            choices = c(
-              "Simple (SRS)"               = "srs",
-              "Estratificado"              = "stratified",
-              "Conglomerados / Multiet\u00e1pico" = "cluster"
+        shiny::fluidRow(
+
+          shiny::column(
+            4,
+            shiny::wellPanel(
+
+              shiny::selectInput(
+                ns("design_type"),
+                "Tipo de dise\u00f1o",
+                choices = c(
+                  "Simple (SRS)"               = "srs",
+                  "Estratificado"              = "stratified",
+                  "Conglomerados / Multiet\u00e1pico" = "cluster"
+                )
+              ),
+
+              shiny::uiOutput(ns("design_theory")),
+
+              shiny::hr(),
+
+              shiny::uiOutput(ns("design_arguments")),
+
+              shiny::actionButton(
+                ns("build"),
+                shiny::textOutput(ns("build_btn"), inline = TRUE),
+                class = "btn-primary"
+              )
             )
           ),
 
-          shiny::uiOutput(ns("design_theory")),
+          shiny::column(
+            8,
+            shiny::wellPanel(
 
-          shiny::hr(),
+              shiny::h4(shiny::textOutput(ns("design_summary"), inline = TRUE)),
+              shiny::verbatimTextOutput(ns("log")),
 
-          shiny::uiOutput(ns("design_arguments")),
+              shiny::h4(shiny::textOutput(ns("r_code"), inline = TRUE)),
+              shiny::verbatimTextOutput(ns("design_code")),
 
-          shiny::actionButton(
-            ns("build"),
-            "Construir dise\u00f1o",
-            class = "btn-primary"
+              shiny::hr(),
+
+              shiny::h4(shiny::textOutput(ns("diagnostic"), inline = TRUE)),
+              shiny::tableOutput(ns("summary"))
+            )
           )
         )
       ),
 
-      shiny::column(
-        8,
-        shiny::wellPanel(
+      # ============================================================
+      # Sub-pestaña 2: Crear variables
+      # ============================================================
+      shiny::tabPanel(
+        title = shiny::tagList(
+          shiny::tags$i(class = "fa fa-magic"),
+          " ",
+          shiny::textOutput(ns("lbl_tab_variables"), inline = TRUE)
+        ),
+        value = "variables",
 
-          shiny::h4("Resumen del dise\u00f1o"),
-          shiny::verbatimTextOutput(ns("log")),
+        shiny::br(),
 
-          shiny::h4("C\u00f3digo del dise\u00f1o en R"),
-          shiny::verbatimTextOutput(ns("design_code")),
-
-          shiny::hr(),
-
-          shiny::h4("Diagn\u00f3stico"),
-          shiny::tableOutput(ns("summary"))
-        )
+        mod_variables_ui(ns("variables"))
       )
     )
   )

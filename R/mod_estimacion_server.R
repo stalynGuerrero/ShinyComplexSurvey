@@ -49,7 +49,7 @@ $$
 Variance is estimated via Taylor linearization or replication methods.
 "
   } else {
-"<b>Media poblacional bajo diseño complejo</b><br><br>
+"<b>Media poblacional bajo dise\u00f1o complejo</b><br><br>
 
 El estimador de la media poblacional se obtiene como:
 
@@ -62,12 +62,12 @@ $$
 donde:
 
 <ul>
-<li>\\(w_i = 1/\\pi_i\\) es el peso de expansión</li>
-<li>\\(\\pi_i\\) es la probabilidad de inclusión</li>
-<li>\\(y_i\\) es la variable de interés</li>
+<li>\\(w_i = 1/\\pi_i\\) es el peso de expansi\u00f3n</li>
+<li>\\(\\pi_i\\) es la probabilidad de inclusi\u00f3n</li>
+<li>\\(y_i\\) es la variable de inter\u00e9s</li>
 </ul>
 
-Este estimador puede interpretarse como el estimador de Horvitz-Thompson del total dividido por el tamaño poblacional estimado.
+Este estimador puede interpretarse como el estimador de Horvitz-Thompson del total dividido por el tama\u00f1o poblacional estimado.
 
 $$
 \\hat{\\bar{Y}} = \\frac{\\hat{T}_Y}{\\hat{N}}
@@ -91,7 +91,7 @@ $$
 \\widehat{Var}\\left(\\sum w_i y_i\\right)
 $$
 
-La varianza se estima mediante linearización de Taylor o métodos de replicación.
+La varianza se estima mediante linearizaci\u00f3n de Taylor o m\u00e9todos de replicaci\u00f3n.
 "
   }
 }
@@ -138,8 +138,8 @@ $$
 donde:
 
 <ul>
-<li>\\(w_i = 1/\\pi_i\\) es el peso de expansión</li>
-<li>\\(\\pi_i\\) es la probabilidad de inclusión</li>
+<li>\\(w_i = 1/\\pi_i\\) es el peso de expansi\u00f3n</li>
+<li>\\(\\pi_i\\) es la probabilidad de inclusi\u00f3n</li>
 </ul>
 
 Bajo muestreo estratificado:
@@ -151,7 +151,7 @@ $$
 w_{hi} y_{hi}
 $$
 
-Este estimador es insesgado bajo el diseño de muestreo.
+Este estimador es insesgado bajo el dise\u00f1o de muestreo.
 "
   }
 }
@@ -183,19 +183,19 @@ This estimator is equivalent to the weighted mean of the indicator variable.
 Variance is approximated via Taylor linearization.
 "
   } else {
-"<b>Proporción poblacional</b><br><br>
+"<b>Proporci\u00f3n poblacional</b><br><br>
 
 Definiendo una variable indicadora:
 
 $$
 I_i =
 \\begin{cases}
-1 & \\text{si la unidad pertenece a la categoría de interés} \\\\
+1 & \\text{si la unidad pertenece a la categor\u00eda de inter\u00e9s} \\\\
 0 & \\text{en otro caso}
 \\end{cases}
 $$
 
-La proporción poblacional se estima como:
+La proporci\u00f3n poblacional se estima como:
 
 $$
 \\hat{P} =
@@ -205,7 +205,7 @@ $$
 
 Este estimador es equivalente a la media ponderada de la variable indicadora.
 
-La varianza se aproxima mediante linearización de Taylor.
+La varianza se aproxima mediante linearizaci\u00f3n de Taylor.
 "
   }
 }
@@ -316,10 +316,10 @@ correlation between \\(Y\\) and \\(X\\), as the denominator acts as
 an auxiliary variable reducing the variance of the estimator.
 "
   } else {
-"<b>Estimador de razón</b><br><br>
+"<b>Estimador de raz\u00f3n</b><br><br>
 
-El estimador de razón compara dos totales poblacionales estimados
-a partir de una muestra con pesos de expansión.
+El estimador de raz\u00f3n compara dos totales poblacionales estimados
+a partir de una muestra con pesos de expansi\u00f3n.
 
 $$
 \\hat{R} =
@@ -330,7 +330,7 @@ $$
 donde:
 
 <ul>
-<li>\\(w_i\\) es el peso de expansión</li>
+<li>\\(w_i\\) es el peso de expansi\u00f3n</li>
 <li>\\(y_i\\) es la variable del numerador</li>
 <li>\\(x_i\\) es la variable del denominador</li>
 <li>\\(s\\) representa el conjunto de unidades de la muestra</li>
@@ -338,7 +338,7 @@ donde:
 
 <br>
 
-<b>Relación con los estimadores de Horvitz-Thompson</b>
+<b>Relaci\u00f3n con los estimadores de Horvitz-Thompson</b>
 
 $$
 \\hat{R} = \\frac{\\hat{Y}}{\\hat{X}}
@@ -357,7 +357,7 @@ $$
 <b>Varianza aproximada</b>
 
 El estimador es no lineal, por lo que su varianza se aproxima mediante
-linearización de Taylor:
+linearizaci\u00f3n de Taylor:
 
 $$
 \\widehat{Var}(\\hat{R}) \\approx
@@ -367,12 +367,12 @@ $$
 
 <br>
 
-<b>Casos particulares utilizados en la aplicación</b>
+<b>Casos particulares utilizados en la aplicaci\u00f3n</b>
 
 <br>
 
-<b>1. Razón entre categorías</b><br>
-Ejemplo: proporción de hombres respecto a mujeres.
+<b>1. Raz\u00f3n entre categor\u00edas</b><br>
+Ejemplo: proporci\u00f3n de hombres respecto a mujeres.
 
 Sea
 
@@ -392,7 +392,7 @@ $$
 
 <br>
 
-<b>2. Variable continua sobre categoría</b><br>
+<b>2. Variable continua sobre categor\u00eda</b><br>
 Ejemplo: ingreso promedio de los hombres.
 
 $$
@@ -403,8 +403,8 @@ $$
 
 <br>
 
-<b>3. Razón entre variables continuas</b><br>
-Ejemplo: relación ingreso / gasto.
+<b>3. Raz\u00f3n entre variables continuas</b><br>
+Ejemplo: relaci\u00f3n ingreso / gasto.
 
 $$
 \\hat{R} =
@@ -414,11 +414,11 @@ $$
 
 <br>
 
-<b>Interpretación</b>
+<b>Interpretaci\u00f3n</b>
 
-El estimador de razón es especialmente eficiente cuando existe
-una fuerte correlación entre \\(Y\\) y \\(X\\), ya que el denominador
-actúa como variable auxiliar reduciendo la varianza del estimador.
+El estimador de raz\u00f3n es especialmente eficiente cuando existe
+una fuerte correlaci\u00f3n entre \\(Y\\) y \\(X\\), ya que el denominador
+act\u00faa como variable auxiliar reduciendo la varianza del estimador.
 "
   }
 }
@@ -452,7 +452,7 @@ Variance is usually estimated via:
   } else {
 "<b>Cuantiles ponderados</b><br><br>
 
-Los cuantiles poblacionales se definen a partir de la función de distribución acumulada ponderada:
+Los cuantiles poblacionales se definen a partir de la funci\u00f3n de distribuci\u00f3n acumulada ponderada:
 
 $$
 F_w(y) =
@@ -465,13 +465,13 @@ $$
 F_w(q_p) = p
 $$
 
-Los cuantiles ponderados permiten estimar percentiles de la distribución poblacional bajo diseños complejos.
+Los cuantiles ponderados permiten estimar percentiles de la distribuci\u00f3n poblacional bajo dise\u00f1os complejos.
 
 La varianza suele estimarse mediante:
 
 <ul>
-<li>linearización de Woodruff</li>
-<li>métodos de replicación (Bootstrap, Jackknife, BRR)</li>
+<li>linearizaci\u00f3n de Woodruff</li>
+<li>m\u00e9todos de replicaci\u00f3n (Bootstrap, Jackknife, BRR)</li>
 </ul>
 "
   }
@@ -540,9 +540,9 @@ $$
 </ul>
 "
   } else {
-"<b>Coeficiente de Variación (CV)</b><br><br>
+"<b>Coeficiente de Variaci\u00f3n (CV)</b><br><br>
 
-El coeficiente de variación mide la precisión relativa del estimador.
+El coeficiente de variaci\u00f3n mide la precisi\u00f3n relativa del estimador.
 
 $$
 CV(\\hat{\\theta}) =
@@ -558,33 +558,33 @@ $$
 
 <br>
 
-<b>Interpretación</b>
+<b>Interpretaci\u00f3n</b>
 
 <ul>
-<li><b>&lt; 5%</b> &rarr; Muy alta precisión</li>
-<li><b>5% &ndash; 10%</b> &rarr; Alta precisión</li>
-<li><b>10% &ndash; 20%</b> &rarr; Precisión aceptable</li>
+<li><b>&lt; 5%</b> &rarr; Muy alta precisi\u00f3n</li>
+<li><b>5% &ndash; 10%</b> &rarr; Alta precisi\u00f3n</li>
+<li><b>10% &ndash; 20%</b> &rarr; Precisi\u00f3n aceptable</li>
 <li><b>20% &ndash; 30%</b> &rarr; Uso con cautela</li>
-<li><b>&gt; 30%</b> &rarr; Baja precisión</li>
+<li><b>&gt; 30%</b> &rarr; Baja precisi\u00f3n</li>
 </ul>
 
 <br>
 
 <hr>
 
-<b>Efecto de diseño (Design Effect)</b><br><br>
+<b>Efecto de dise\u00f1o (Design Effect)</b><br><br>
 
-El efecto de diseño mide cuánto aumenta la varianza debido al diseño muestral complejo comparado con un muestreo aleatorio simple.
+El efecto de dise\u00f1o mide cu\u00e1nto aumenta la varianza debido al dise\u00f1o muestral complejo comparado con un muestreo aleatorio simple.
 
 $$
 DEFF =
-\\frac{Var_{diseño}(\\hat{\\theta})}
+\\frac{Var_{dise\u00f1o}(\\hat{\\theta})}
 {Var_{MAS}(\\hat{\\theta})}
 $$
 
 <br>
 
-<b>Tamaño de muestra efectivo</b>
+<b>Tama\u00f1o de muestra efectivo</b>
 
 $$
 n_{eff} =
@@ -889,6 +889,25 @@ mod_estimacion_server <- function(id, design, dict) {
       )
     })
 
-    list(results = shiny::reactive(results_r()))
+    list(
+      results = shiny::reactive(results_r()),
+      meta    = shiny::reactive({
+        res <- results_r()
+        if (is.null(res)) return(NULL)
+        list(
+          estimator = input$estimator,
+          variable  = if (input$estimator != "ratio") {
+            input$y_var
+          } else {
+            paste0(input$numerator, " / ", input$denominator)
+          },
+          domains   = {
+            d <- input$domain_vars
+            if (length(d) == 0 || all(d == "")) character(0) else d
+          },
+          timestamp = Sys.time()
+        )
+      })
+    )
   })
 }

@@ -29,6 +29,7 @@ app_server <- function(input, output, session) {
   output$tab_datos      <- shiny::renderText({ i18n_t(dict(), "app.tabs.datos") })
   output$tab_diseno     <- shiny::renderText({ i18n_t(dict(), "app.tabs.diseno") })
   output$tab_estimacion <- shiny::renderText({ i18n_t(dict(), "app.tabs.estimacion") })
+  output$tab_tablas     <- shiny::renderText({ i18n_t(dict(), "app.tabs.tablas") })
 
   # =========================
   # Portada: textos reactivos
@@ -49,7 +50,8 @@ app_server <- function(input, output, session) {
     shiny::stopApp()
   })
 
-  shiny::observeEvent(input$go_to_datos, {
+  # Botón CTA de portada → navega a la pestaña Datos
+  shiny::observeEvent(input$cover_btn_start, {
     shiny::updateNavbarPage(session, "navbar", selected = "datos")
   })
 
@@ -66,5 +68,10 @@ app_server <- function(input, output, session) {
   # =========================
   # Módulo: Estimación
   # =========================
-  mod_estimacion_server("estimacion", diseno_res$design, dict)
+  estimacion_res <- mod_estimacion_server("estimacion", diseno_res$design, dict)
+
+  # =========================
+  # Módulo: Tablas de estimaciones
+  # =========================
+  mod_tablas_server("tablas", estimacion_res$results, estimacion_res$meta, dict)
 }
