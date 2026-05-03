@@ -1,11 +1,19 @@
 Package: ShinyComplexSurvey
 Title: Interfaz Shiny para Analisis de Encuestas Complejas
 Version: 0.0.0.9000
-Authors: Stalyn Guerrero 
-Description: Aplicacion Shiny para analizar datos de encuestas complejas de
-    forma guiada, incluyendo definicion del diseno muestral, calculo de
-    indicadores con medidas de precision y visualizacion interactiva de
-    resultados para usuarios sin necesidad de programar.
+Authors@R: 
+    person(
+      "Stalyn", "Guerrero Gómez",
+      email = "guerrerostalyn@gmail.com",
+      role = c("aut", "cre")
+    )
+Description: 
+    Provides a tidyverse-oriented framework for the analysis of complex survey data.
+    The package supports data ingestion from multiple formats, construction and
+    diagnosis of complex survey designs, and estimation of basic survey statistics
+    such as means, totals, and proportions with associated measures of uncertainty.
+    It is designed as a reusable statistical backend that can be used programmatically
+    or integrated into interactive applications built with Shiny.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -13,21 +21,32 @@ RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 Imports:
-    bslib,
-    DT,
     dplyr,
-    esquisse,
-    ggplot2,
-    glue,
-    plotly,
-    readr,
-    shiny,
-    shinydashboard,
-    shinyjs,
-    shinythemes,
-    shinyWidgets,
+    tibble,
     tidyr,
-    writexl
+    readr,
+    readxl,
+    haven,
+    rlang,
+    purrr,
+    shiny,
+    tools,
+    stats,
+    utils,
+    srvyr,
+    survey,
+    magrittr,
+    ggplot2,
+    jsonlite,
+    writexl,
+    DT,
+    tidyselect
 Suggests:
     knitr,
-    rmarkdown
+    rmarkdown,
+    quarto,
+    printr,
+    rpivotTable,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr, quarto
+Config/testthat/edition: 3
